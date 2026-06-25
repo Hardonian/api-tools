@@ -1,42 +1,37 @@
-CREATE TABLE IF NOT EXISTS audits (
+CREATE TABLE IF NOT EXISTS jobs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    workspace_name TEXT NOT NULL,
-    repo_url TEXT,
-    audited_at TEXT NOT NULL,
-    overall_score REAL,
-    critical_findings INTEGER DEFAULT 0,
-    high_findings INTEGER DEFAULT 0,
-    medium_findings INTEGER DEFAULT 0,
-    total_findings INTEGER DEFAULT 0,
-    report_json TEXT,
-    status TEXT DEFAULT 'pending',
-    created_at TEXT DEFAULT (datetime('now'))
+    job_id TEXT NOT NULL UNIQUE,
+    workflow TEXT NOT NULL,
+    status TEXT DEFAULT 'queued',
+    priority INTEGER DEFAULT 5,
+    gpu_required TEXT,
+    progress INTEGER DEFAULT 0,
+    result_url TEXT,
+    error TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    completed_at TEXT
 );
 
-CREATE TABLE IF NOT EXISTS findings (
+CREATE TABLE IF NOT EXISTS workflows (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    audit_id INTEGER NOT NULL,
-    category TEXT NOT NULL,
-    severity TEXT NOT NULL,
-    title TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
     description TEXT,
-    recommendation TEXT,
-    resource_type TEXT,
-    resource_name TEXT,
+    workflow_json TEXT,
+    category TEXT,
+    tags TEXT,
+    usage_count INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
 );
 
-CREATE TABLE IF NOT EXISTS reports (
+CREATE TABLE IF NOT EXISTS gpu_nodes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    audit_id INTEGER NOT NULL,
-    format TEXT DEFAULT 'markdown',
-    content TEXT,
-    delivered_via TEXT,
-    delivered_at TEXT,
+    name TEXT NOT NULL,
+    gpu_type TEXT,
+    status TEXT DEFAULT 'available',
+    current_job_id INTEGER,
+    last_heartbeat TEXT,
     created_at TEXT DEFAULT (datetime('now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_audit_workspace ON audits(workspace_name);
-CREATE INDEX IF NOT EXISTS idx_audit_status ON audits(status);
-CREATE INDEX IF NOT EXISTS idx_finding_audit ON findings(audit_id);
-CREATE INDEX IF NOT EXISTS idx_finding_severity ON findings(severity);
+CREATE INDEX IF NOT EXISTS idx_job_status ON jobs(status);
+CREATE INDEX IF NOT EXISTS idx_workflow_cat ON workflows(category);
