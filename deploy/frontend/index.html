@@ -17,7 +17,7 @@
         <div class="brand-logo">C</div>
         <div class="brand-title">
           <h1>ComfyUI API <span class="badge">v1.0.0</span></h1>
-          <span style="font-size: 0.75rem; color: var(--text-dim);">Enterprise GPU Queue & Workflow Gateway</span>
+          <span class="brand-subtitle">Enterprise GPU Queue & Workflow Gateway</span>
         </div>
       </div>
 
@@ -25,8 +25,8 @@
         <div class="status-pill" id="status-indicator">
           <span class="status-dot"></span> System Online
         </div>
-        <div style="display: flex; gap: 0.35rem; align-items: center;">
-          <input type="password" id="input-api-key" placeholder="API Key / Bearer Token" style="width: 170px; padding: 0.4rem 0.6rem; font-size: 0.75rem;">
+        <div class="api-key-group">
+          <input type="password" id="input-api-key" placeholder="API Key / Bearer Token" class="api-key-input" aria-label="API Key or Bearer Token">
           <button class="btn btn-secondary btn-sm" onclick="saveApiKey()">Save</button>
         </div>
       </div>
@@ -81,8 +81,8 @@
       <div class="card">
         <div class="card-title-row">
           <h2 class="card-title">Live Execution Queue</h2>
-          <div style="display: flex; gap: 0.5rem; align-items: center;">
-            <select id="job-status-filter" onchange="fetchJobs()" style="width: 140px; padding: 0.4rem 0.6rem; font-size: 0.8rem;">
+          <div class="table-filter-group">
+            <select id="job-status-filter" class="filter-select" onchange="fetchJobs()" title="Filter by job status" aria-label="Filter by job status">
               <option value="">All Statuses</option>
               <option value="queued">Queued</option>
               <option value="processing">Processing</option>
@@ -108,7 +108,7 @@
               </tr>
             </thead>
             <tbody id="jobs-table-body">
-              <tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-dim);">Loading queue...</td></tr>
+              <tr><td colspan="7" class="table-placeholder">Loading queue...</td></tr>
             </tbody>
           </table>
         </div>
@@ -126,7 +126,7 @@
           <div class="form-grid">
             <div class="form-group full-width">
               <label for="submit-workflow-select">Workflow Template</label>
-              <select id="submit-workflow-select">
+              <select id="submit-workflow-select" title="Select workflow template" aria-label="Select workflow template">
                 <option value="">-- Default / Generic Workflow --</option>
               </select>
             </div>
@@ -142,7 +142,7 @@
             </div>
 
             <div class="form-group">
-              <label for="submit-seed">Random Seed <a href="javascript:void(0)" onclick="randomizeSeed()" style="float: right; text-transform: none; color: var(--primary-light);">Randomize</a></label>
+              <label for="submit-seed">Random Seed <a href="javascript:void(0)" onclick="randomizeSeed()" class="label-link">Randomize</a></label>
               <input type="number" id="submit-seed" value="42">
             </div>
 
@@ -172,7 +172,7 @@
             </div>
           </div>
 
-          <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <div class="form-actions">
             <button type="submit" id="btn-submit-job" class="btn btn-primary">Dispatch Generation Job</button>
           </div>
         </form>
@@ -187,7 +187,7 @@
           <button class="btn btn-secondary btn-sm" onclick="fetchWorkflows()">Refresh</button>
         </div>
         <div id="workflows-container" class="workflows-grid">
-          <p style="color: var(--text-dim); text-align: center; grid-column: 1/-1; padding: 2rem;">Loading workflows...</p>
+          <p class="empty-state-text">Loading workflows...</p>
         </div>
       </div>
     </section>
@@ -200,7 +200,7 @@
           <button class="btn btn-secondary btn-sm" onclick="fetchNodes()">Refresh Fleet</button>
         </div>
         <div id="nodes-container" class="nodes-grid">
-          <p style="color: var(--text-dim); text-align: center; grid-column: 1/-1; padding: 2rem;">Loading worker nodes...</p>
+          <p class="empty-state-text">Loading worker nodes...</p>
         </div>
       </div>
     </section>
@@ -208,9 +208,9 @@
     <!-- PANEL 5: API Documentation -->
     <section id="panel-docs" class="tab-panel">
       <div class="card">
-        <h2 class="card-title" style="margin-bottom: 1rem;">API Quickstart & SDK Reference</h2>
+        <h2 class="card-title">API Quickstart & SDK Reference</h2>
         
-        <h3 style="font-size: 0.95rem; margin: 1rem 0 0.5rem; color: var(--primary-light);">1. Submit Job via cURL</h3>
+        <h3 class="doc-heading">1. Submit Job via cURL</h3>
         <pre class="code-block">curl -X POST https://api.comfyui.hardonian.com/api/v1/jobs \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY" \
@@ -224,7 +224,7 @@
     "priority": 8
   }'</pre>
 
-        <h3 style="font-size: 0.95rem; margin: 1.5rem 0 0.5rem; color: var(--primary-light);">2. Python SDK Client</h3>
+        <h3 class="doc-heading">2. Python SDK Client</h3>
         <pre class="code-block">from client.comfyui_api_client import ComfyUIClient
 
 client = ComfyUIClient(api_url="https://api.comfyui.hardonian.com", api_key="YOUR_API_KEY")
@@ -238,7 +238,7 @@ result = client.generate(
 )
 print("Generated artifacts:", result["outputs"])</pre>
 
-        <h3 style="font-size: 0.95rem; margin: 1.5rem 0 0.5rem; color: var(--primary-light);">3. Run Worker Daemon on GPU Node</h3>
+        <h3 class="doc-heading">3. Run Worker Daemon on GPU Node</h3>
         <pre class="code-block"># On your EPYC GPU Server
 python -m bridge.comfy_worker_daemon \
   --api-url https://api.comfyui.hardonian.com \
@@ -248,31 +248,31 @@ python -m bridge.comfy_worker_daemon \
     </section>
 
     <!-- Job Details Modal -->
-    <div id="job-modal" class="modal-overlay" style="display: none;" onclick="if(event.target===this)closeJobModal()">
+    <div id="job-modal" class="modal-overlay" onclick="if(event.target===this)closeJobModal()">
       <div class="modal-content">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+        <div class="modal-header">
           <div>
-            <h2 style="font-size: 1.25rem; font-family: var(--font-mono); color: #fff;" id="modal-job-id">job_12345</h2>
-            <div id="modal-job-status" style="margin-top: 0.25rem;"></div>
+            <h2 class="modal-job-title" id="modal-job-id">job_12345</h2>
+            <div id="modal-job-status" class="modal-status-badge"></div>
           </div>
           <button class="btn btn-secondary btn-sm" onclick="closeJobModal()">Close</button>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.85rem;">
-          <div><span style="color: var(--text-dim);">Workflow:</span> <span id="modal-job-workflow" style="font-weight: 600;">-</span></div>
-          <div><span style="color: var(--text-dim);">Assigned Node:</span> <span id="modal-job-node" style="font-weight: 600;">-</span></div>
-          <div><span style="color: var(--text-dim);">Created At:</span> <span id="modal-job-created">-</span></div>
+        <div class="modal-meta-grid">
+          <div><span class="modal-meta-label">Workflow:</span> <span id="modal-job-workflow" class="modal-meta-val">-</span></div>
+          <div><span class="modal-meta-label">Assigned Node:</span> <span id="modal-job-node" class="modal-meta-val">-</span></div>
+          <div><span class="modal-meta-label">Created At:</span> <span id="modal-job-created">-</span></div>
         </div>
 
-        <div id="modal-job-error-container" style="display: none; background: var(--danger-bg); border: 1px solid var(--danger); padding: 0.85rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; font-size: 0.85rem; color: #fca5a5;">
+        <div id="modal-job-error-container" class="modal-error-box">
           <strong>Error:</strong> <span id="modal-job-error"></span>
         </div>
 
-        <h3 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-main);">Output Artifacts</h3>
-        <div id="modal-gallery" class="gallery-grid" style="margin-bottom: 1.5rem;"></div>
+        <h3 class="modal-section-title">Output Artifacts</h3>
+        <div id="modal-gallery" class="gallery-grid"></div>
 
-        <h3 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-main);">Execution Logs</h3>
-        <pre id="modal-logs" class="code-block" style="max-height: 200px;">Loading logs...</pre>
+        <h3 class="modal-section-title">Execution Logs</h3>
+        <pre id="modal-logs" class="code-block modal-logs-view">Loading logs...</pre>
       </div>
     </div>
 

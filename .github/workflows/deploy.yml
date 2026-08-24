@@ -31,7 +31,8 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    environment: production
+    environment:
+      name: production
     steps:
       - uses: actions/checkout@v4
 
@@ -73,16 +74,20 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
       - name: Smoke test health
+        env:
+          TARGET_DOMAIN: ${{ vars.DOMAIN }}
         run: |
           sleep 5
-          curl -sf "https://${{ vars.DOMAIN || 'comfyui-api.workers.dev' }}/health" || echo "Health check endpoint deployed"
+          DOMAIN="${TARGET_DOMAIN:-comfyui-api.workers.dev}"
+          curl -sf "https://${DOMAIN}/health" || echo "Health check endpoint deployed"
 
   deploy-frontend:
     name: Deploy Cloudflare Pages Dashboard
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    environment: production
+    environment:
+      name: production
     steps:
       - uses: actions/checkout@v4
 

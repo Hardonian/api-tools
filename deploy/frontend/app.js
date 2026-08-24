@@ -111,7 +111,7 @@ function renderJobsTable() {
   if (!tbody) return;
 
   if (state.jobs.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2.5rem; color: var(--text-muted);">No jobs found in queue</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="table-placeholder">No jobs found in queue</td></tr>';
     return;
   }
 
@@ -122,7 +122,7 @@ function renderJobsTable() {
     return `
       <tr>
         <td>
-          <a href="javascript:void(0)" onclick="openJobDetails('${job.job_id}')" style="color:var(--primary-light); font-family:var(--font-mono); font-weight:600;">
+          <a href="javascript:void(0)" onclick="openJobDetails('${job.job_id}')" class="job-link">
             ${job.job_id}
           </a>
         </td>
@@ -130,8 +130,8 @@ function renderJobsTable() {
         <td>
           <span class="badge-status ${job.status}">${job.status}</span>
         </td>
-        <td style="min-width: 140px;">
-          <div style="font-size: 0.75rem; display:flex; justify-content:space-between; margin-bottom: 2px;">
+        <td class="progress-cell">
+          <div class="progress-info">
             <span>${progress}%</span>
             <span>${job.current_node ? escapeHtml(job.current_node) : ''}</span>
           </div>
@@ -139,12 +139,12 @@ function renderJobsTable() {
             <div class="progress-bar-fill" style="width: ${progress}%"></div>
           </div>
         </td>
-        <td>${job.assigned_node_id ? escapeHtml(job.assigned_node_id) : '<span style="color:var(--text-muted)">Unassigned</span>'}</td>
-        <td style="font-size: 0.8rem; color: var(--text-dim);">${formatRelativeTime(job.created_at)}</td>
+        <td>${job.assigned_node_id ? escapeHtml(job.assigned_node_id) : '<span class="unassigned-text">Unassigned</span>'}</td>
+        <td class="relative-time-text">${formatRelativeTime(job.created_at)}</td>
         <td>
-          <div style="display:flex; gap: 0.35rem;">
+          <div class="action-btn-group">
             <button class="btn btn-secondary btn-sm" onclick="openJobDetails('${job.job_id}')">View</button>
-            ${isProcessing || job.status === 'queued' ? `<button class="btn btn-secondary btn-sm" style="color:var(--danger)" onclick="cancelJob('${job.job_id}')">Cancel</button>` : ''}
+            ${isProcessing || job.status === 'queued' ? `<button class="btn btn-secondary btn-sm btn-cancel-action" onclick="cancelJob('${job.job_id}')">Cancel</button>` : ''}
             ${['failed', 'cancelled'].includes(job.status) ? `<button class="btn btn-secondary btn-sm" onclick="retryJob('${job.job_id}')">Retry</button>` : ''}
           </div>
         </td>
@@ -175,13 +175,13 @@ async function openJobDetails(jobId) {
       galleryEl.innerHTML = job.outputs.map(out => `
         <div class="gallery-item">
           <img src="${out.url || out.path || ''}" alt="${escapeHtml(out.filename || 'Output')}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\'><rect fill=\\'%231e293b\\' width=\\'100\\' height=\\'100\\'/><text fill=\\'%2394a3b8\\' x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\'>File</text></svg>'">
-          <div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.7); font-size:0.7rem; padding:4px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+          <div class="gallery-caption">
             ${escapeHtml(out.filename || 'Artifact')}
           </div>
         </div>
       `).join('');
     } else {
-      galleryEl.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">No output artifacts generated yet.</p>';
+      galleryEl.innerHTML = '<p class="gallery-placeholder">No output artifacts generated yet.</p>';
     }
 
     // Fetch and show logs
@@ -351,7 +351,7 @@ function renderWorkflows() {
   if (!container) return;
 
   if (state.workflows.length === 0) {
-    container.innerHTML = '<p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding:3rem;">No workflow templates registered yet. Click "Register Workflow" to add one.</p>';
+    container.innerHTML = '<p class="empty-state-text">No workflow templates registered yet. Click "Register Workflow" to add one.</p>';
     return;
   }
 
@@ -359,16 +359,16 @@ function renderWorkflows() {
     <div class="workflow-card">
       <div class="card-header-flex">
         <div>
-          <h3 style="font-size:1rem; font-weight:700; color:#fff;">${escapeHtml(wf.name)}</h3>
-          <span style="font-size:0.75rem; color:var(--primary-light);">${escapeHtml(wf.category)} • v${escapeHtml(wf.version || '1.0.0')}</span>
+          <h3 class="workflow-title">${escapeHtml(wf.name)}</h3>
+          <span class="workflow-meta">${escapeHtml(wf.category)} • v${escapeHtml(wf.version || '1.0.0')}</span>
         </div>
-        <span class="badge" style="background:rgba(255,255,255,0.06); font-size:0.7rem; padding:2px 8px; border-radius:12px;">Used ${wf.usage_count}x</span>
+        <span class="usage-badge">Used ${wf.usage_count}x</span>
       </div>
-      <p style="font-size:0.8rem; color:var(--text-dim); margin-bottom:1rem; min-height:40px;">
+      <p class="workflow-desc">
         ${escapeHtml(wf.description || 'No description provided.')}
       </p>
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-size:0.75rem; color:var(--text-muted);">By ${escapeHtml(wf.author || 'Hardonian')}</span>
+      <div class="workflow-footer">
+        <span class="workflow-author">By ${escapeHtml(wf.author || 'Hardonian')}</span>
         <button class="btn btn-primary btn-sm" onclick="selectWorkflowToRun('${wf.workflow_id}')">Run Workflow</button>
       </div>
     </div>
@@ -399,36 +399,35 @@ function renderNodes() {
   if (!container) return;
 
   if (state.nodes.length === 0) {
-    container.innerHTML = '<p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding:3rem;">No GPU worker nodes registered yet. Start the bridge daemon on your GPU server to register.</p>';
+    container.innerHTML = '<p class="empty-state-text">No GPU worker nodes registered yet. Start the bridge daemon on your GPU server to register.</p>';
     return;
   }
 
   container.innerHTML = state.nodes.map(n => {
-    const isOnline = n.computed_status !== 'offline';
     return `
       <div class="node-card">
         <div class="card-header-flex">
           <div>
-            <h3 style="font-size:1rem; font-weight:700; color:#fff;">${escapeHtml(n.name)}</h3>
-            <span style="font-size:0.75rem; font-family:var(--font-mono); color:var(--text-dim);">${escapeHtml(n.node_id)}</span>
+            <h3 class="node-title">${escapeHtml(n.name)}</h3>
+            <span class="node-id-text">${escapeHtml(n.node_id)}</span>
           </div>
           <span class="badge-status ${n.computed_status}">${n.computed_status}</span>
         </div>
-        <div style="margin: 0.85rem 0; font-size: 0.85rem;">
-          <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
-            <span style="color:var(--text-dim);">GPU:</span>
-            <span style="font-weight:600;">${escapeHtml(n.gpu_type || 'Unknown')}</span>
+        <div class="node-meta-grid">
+          <div class="node-meta-row">
+            <span class="node-meta-label">GPU:</span>
+            <span class="node-meta-val-bold">${escapeHtml(n.gpu_type || 'Unknown')}</span>
           </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
-            <span style="color:var(--text-dim);">VRAM:</span>
+          <div class="node-meta-row">
+            <span class="node-meta-label">VRAM:</span>
             <span>${n.vram_gb ? n.vram_gb + ' GB' : 'N/A'}</span>
           </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
-            <span style="color:var(--text-dim);">Completed Jobs:</span>
+          <div class="node-meta-row">
+            <span class="node-meta-label">Completed Jobs:</span>
             <span>${n.completed_jobs || 0}</span>
           </div>
-          <div style="display:flex; justify-content:space-between;">
-            <span style="color:var(--text-dim);">Last Heartbeat:</span>
+          <div class="node-meta-row">
+            <span class="node-meta-label">Last Heartbeat:</span>
             <span>${formatRelativeTime(n.last_heartbeat)}</span>
           </div>
         </div>

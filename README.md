@@ -10,7 +10,7 @@
 
 ## 🏛 Architecture Overview
 
-```
+```text
  ┌──────────────────────────────────────────────┐
  │  Clients / Apps / Pack Factory / Frontends   │
  └──────────────────────┬───────────────────────┘
@@ -65,7 +65,7 @@
 
 ## 📦 Project Structure
 
-```
+```text
 ├── bridge/
 │   ├── comfy_worker_daemon.py   # GPU server worker bridge daemon
 │   └── workflow_adapter.py      # AST parameter override engine
@@ -101,6 +101,7 @@
 ### 1. Python Client SDK
 
 Install dependencies or install in editable mode:
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -135,6 +136,7 @@ print("Generated Outputs:", result["outputs"])
 ### 2. Launch Worker Daemon (on GPU Server)
 
 Run the bridge daemon on your EPYC rig or GPU machine:
+
 ```bash
 python -m bridge.comfy_worker_daemon \
   --api-url https://api.comfyui.hardonian.com \
@@ -147,6 +149,7 @@ python -m bridge.comfy_worker_daemon \
 
 1. Copy `.env.example` to `.env` and set your credentials.
 2. Initialize and deploy with Wrangler:
+
 ```bash
 cd deploy/workers
 wrangler d1 create comfyui_api_db
@@ -179,7 +182,7 @@ wrangler deploy
 | `POST` | `/api/v1/workflows` | Client / Admin | Register a workflow template |
 | `GET` | `/api/v1/workflows` | Public | List available workflow templates |
 | `GET` | `/api/v1/workflows/:id` | Public | Retrieve workflow template by ID/slug |
-| `POST` | `/api/v1/workflows/:id/execute`| Client / Admin | Execute a workflow template directly |
+| `POST` | `/api/v1/workflows/:id/execute` | Client / Admin | Execute a workflow template directly |
 | `POST` | `/api/v1/batch/submit` | Client / Admin | Submit a parameter matrix batch |
 
 ---
