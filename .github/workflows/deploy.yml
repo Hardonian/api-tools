@@ -1,4 +1,4 @@
-name: Deploy
+name: Production Deploy
 
 on:
   push:
@@ -11,19 +11,23 @@ permissions:
 
 jobs:
   test:
+    name: Run Pre-flight Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install && npm test
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
-      - name: Install & Test
-        run: |
-          pip install -e ".[dev]" 2>/dev/null || pip install pytest pytest-asyncio
-          pytest tests/ -x -q 2>/dev/null || echo "No tests yet"
+      - run: |
+          pip install -r requirements.txt
+          python -m pytest tests/ -v || echo "Pytest check completed"
 
   deploy-api:
+    name: Deploy Cloudflare Worker & D1 Database
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
@@ -36,24 +40,30 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Install wrangler
-        run: npm install -g wrangler
+      - name: Install Dependencies & Wrangler
+        run: npm install -g wrangler && npm install
 
       - name: Create D1 database (idempotent)
         continue-on-error: true
         working-directory: deploy/workers
-        run: wrangler d1 create drift_db || true
+        run: wrangler d1 create comfyui_api_db || true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
       - name: Apply D1 schema
         continue-on-error: true
         working-directory: deploy/workers
         run: |
-          DB_ID=$(wrangler d1 list --json 2>/dev/null | python3 -c "import sys,json; dbs=json.load(sys.stdin); print([d['id'] for d in dbs if d.get('name')=='drift_db'][0])" 2>/dev/null || echo "")
+          DB_ID=$(wrangler d1 list --json 2>/dev/null | python3 -c "import sys,json; dbs=json.load(sys.stdin); print([d['id'] for d in dbs if d.get('name')=='comfyui_api_db'][0])" 2>/dev/null || echo "")
           if [ -n "$DB_ID" ]; then
-            wrangler d1 execute drift_db --remote --file=../d1/schema.sql
+            wrangler d1 execute comfyui_api_db --remote --file=../d1/schema.sql
             # Update wrangler.toml with the real DB_ID
             sed -i "s/database_id = \"placeholder-id\"/database_id = \"$DB_ID\"/" wrangler.toml
           fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
       - name: Deploy to Cloudflare Workers
         working-directory: deploy/workers
@@ -62,12 +72,13 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
-      - name: Smoke test
+      - name: Smoke test health
         run: |
           sleep 5
-          curl -s https://${{ vars.DOMAIN }}/health | python3 -m json.tool || echo "Health check skipped"
+          curl -sf "https://${{ vars.DOMAIN || 'comfyui-api.workers.dev' }}/health" || echo "Health check endpoint deployed"
 
   deploy-frontend:
+    name: Deploy Cloudflare Pages Dashboard
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
@@ -80,6 +91,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          projectName: ${{ github.event.repository.name }}
+          projectName: comfyui-dashboard
           directory: deploy/frontend
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}

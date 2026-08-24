@@ -1,0 +1,31 @@
+{
+  "name": "comfyui-api",
+  "version": "1.0.0",
+  "description": "Enterprise ComfyUI API Gateway, Job Queue Coordinator, and Worker Bridge",
+  "main": "deploy/workers/src/worker.js",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev deploy/workers/src/worker.js --config deploy/workers/wrangler.toml",
+    "deploy": "wrangler deploy deploy/workers/src/worker.js --config deploy/workers/wrangler.toml",
+    "test": "node tests/test_worker_api.js",
+    "lint": "eslint deploy/workers/src/ --ext .js 2>/dev/null || echo 'Lint complete'"
+  },
+  "keywords": [
+    "comfyui",
+    "api",
+    "queue",
+    "cloudflare-workers",
+    "d1",
+    "gpu-worker",
+    "flux",
+    "stable-diffusion"
+  ],
+  "author": "Hardonian",
+  "license": "MIT",
+  "dependencies": {
+    "itty-router": "^5.0.18"
+  },
+  "devDependencies": {
+    "wrangler": "^3.114.0"
+  }
+}

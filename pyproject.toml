@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "comfyui-api"
+version = "1.0.0"
+description = "Enterprise ComfyUI API Gateway, Worker Bridge Daemon, and Client SDK"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Hardonian", email = "engineering@hardonian.ai" }
+]
+dependencies = [
+    "requests>=2.31.0",
+    "aiohttp>=3.9.0",
+    "websockets>=12.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.29.0",
+    "ruff>=0.3.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]

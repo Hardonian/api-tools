@@ -1,104 +1,285 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Dashboard</title>
-    <style>
-        :root { --bg:#0a0a0f; --surface:#12121a; --border:#1e1e2e; --text:#e4e4ef; --text-dim:#8888a0; --accent:#6c5ce7; --accent-light:#a29bfe; --green:#00d68f; --red:#ff4757; }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); line-height:1.6; min-height:100vh; }
-        .container { max-width:1000px; margin:0 auto; padding:2rem 1.5rem; }
-        header { display:flex; justify-content:space-between; align-items:center; padding:1rem 0 2rem; border-bottom:1px solid var(--border); margin-bottom:2rem; }
-        .logo { font-size:1.25rem; font-weight:700; color:var(--accent-light); }
-        .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1rem; margin-bottom:2rem; }
-        .stat { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1.25rem; }
-        .stat-value { font-size:1.75rem; font-weight:800; }
-        .stat-label { color:var(--text-dim); font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; }
-        .stat.critical .stat-value { color:var(--red); }
-        .stat.clean .stat-value { color:var(--green); }
-        .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.5rem; margin-bottom:2rem; }
-        .btn { display:inline-flex; align-items:center; gap:0.5rem; padding:0.6rem 1.25rem; border-radius:8px; font-size:0.9rem; font-weight:600; text-decoration:none; border:none; cursor:pointer; transition:all 0.2s; }
-        .btn-primary { background:var(--accent); color:white; }
-        .btn-secondary { background:var(--surface); color:var(--text); border:1px solid var(--border); }
-        .loading { text-align:center; padding:3rem; color:var(--text-dim); }
-        table { width:100%; border-collapse:collapse; }
-        th { text-align:left; padding:0.75rem 1rem; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-dim); border-bottom:1px solid var(--border); }
-        td { padding:0.75rem 1rem; font-size:0.9rem; border-bottom:1px solid var(--border); }
-        .footer { text-align:center; padding:3rem 0; color:var(--text-dim); font-size:0.8rem; }
-        code { background:rgba(108,92,231,0.1); padding:0.15rem 0.4rem; border-radius:4px; font-size:0.85rem; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ComfyUI API Gateway & Queue Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="logo" id="logo">API Dashboard</div>
-            <button class="btn btn-primary" onclick="location.reload()">Refresh</button>
-        </header>
+  <div class="app-container">
+    <!-- Header -->
+    <header>
+      <div class="brand-section">
+        <div class="brand-logo">C</div>
+        <div class="brand-title">
+          <h1>ComfyUI API <span class="badge">v1.0.0</span></h1>
+          <span style="font-size: 0.75rem; color: var(--text-dim);">Enterprise GPU Queue & Workflow Gateway</span>
+        </div>
+      </div>
 
-        <section class="stats" id="stats">
-            <div class="stat"><div class="stat-value" id="s-total">-</div><div class="stat-label">Total</div></div>
-            <div class="stat"><div class="stat-value" id="s-active">-</div><div class="stat-label">Active</div></div>
-            <div class="stat critical"><div class="stat-value" id="s-critical">-</div><div class="stat-label">Issues</div></div>
-            <div class="stat clean"><div class="stat-value" id="s-healthy">-</div><div class="stat-label">Healthy</div></div>
-        </section>
+      <div class="header-actions">
+        <div class="status-pill" id="status-indicator">
+          <span class="status-dot"></span> System Online
+        </div>
+        <div style="display: flex; gap: 0.35rem; align-items: center;">
+          <input type="password" id="input-api-key" placeholder="API Key / Bearer Token" style="width: 170px; padding: 0.4rem 0.6rem; font-size: 0.75rem;">
+          <button class="btn btn-secondary btn-sm" onclick="saveApiKey()">Save</button>
+        </div>
+      </div>
+    </header>
 
-        <div class="card">
-            <h2 style="margin-bottom:1rem;">API Endpoints</h2>
-            <table>
-                <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td><span style="color:var(--green);">GET</span></td><td><code>/health</code></td><td>Health check</td></tr>
-                    <tr><td><span style="color:var(--green);">GET</span></td><td><code>/api/v1/*</code></td><td>List all records</td></tr>
-                    <tr><td><span style="color:var(--accent);">POST</span></td><td><code>/api/v1/*</code></td><td>Create new record</td></tr>
-                    <tr><td><span style="color:var(--green);">GET</span></td><td><code>/api/v1/*/:id</code></td><td>Get record by ID</td></tr>
-                </tbody>
-            </table>
+    <!-- Top Stats Row -->
+    <section class="stats-grid">
+      <div class="stat-card queued">
+        <div class="stat-header">
+          <span class="stat-label">Queue Depth</span>
+        </div>
+        <div class="stat-val" id="stat-queued">-</div>
+        <div class="stat-sub">Pending GPU assignment</div>
+      </div>
+
+      <div class="stat-card active">
+        <div class="stat-header">
+          <span class="stat-label">Active Processing</span>
+        </div>
+        <div class="stat-val" id="stat-active">-</div>
+        <div class="stat-sub">Inference in progress</div>
+      </div>
+
+      <div class="stat-card completed">
+        <div class="stat-header">
+          <span class="stat-label">Completed Jobs</span>
+        </div>
+        <div class="stat-val" id="stat-completed">-</div>
+        <div class="stat-sub">Total finalized runs</div>
+      </div>
+
+      <div class="stat-card fleet">
+        <div class="stat-header">
+          <span class="stat-label">GPU Worker Fleet</span>
+        </div>
+        <div class="stat-val" id="stat-nodes">-</div>
+        <div class="stat-sub">Active worker nodes</div>
+      </div>
+    </section>
+
+    <!-- Tab Navigation -->
+    <nav class="tabs-nav">
+      <button class="tab-btn active" data-tab="jobs" onclick="switchTab('jobs')">Queue & Jobs</button>
+      <button class="tab-btn" data-tab="create" onclick="switchTab('create')">Dispatch Job</button>
+      <button class="tab-btn" data-tab="workflows" onclick="switchTab('workflows')">Workflow Catalog</button>
+      <button class="tab-btn" data-tab="fleet" onclick="switchTab('fleet')">GPU Fleet</button>
+      <button class="tab-btn" data-tab="docs" onclick="switchTab('docs')">API Quickstart</button>
+    </nav>
+
+    <!-- PANEL 1: Jobs Queue & Monitor -->
+    <main id="panel-jobs" class="tab-panel active">
+      <div class="card">
+        <div class="card-title-row">
+          <h2 class="card-title">Live Execution Queue</h2>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <select id="job-status-filter" onchange="fetchJobs()" style="width: 140px; padding: 0.4rem 0.6rem; font-size: 0.8rem;">
+              <option value="">All Statuses</option>
+              <option value="queued">Queued</option>
+              <option value="processing">Processing</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" onclick="fetchJobs()">Refresh</button>
+          </div>
         </div>
 
-        <div class="card">
-            <h2 style="margin-bottom:1rem;">Live Status</h2>
-            <div id="status" class="loading">Loading...</div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Job ID</th>
+                <th>Workflow</th>
+                <th>Status</th>
+                <th>Progress</th>
+                <th>Worker Node</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="jobs-table-body">
+              <tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-dim);">Loading queue...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- PANEL 2: Dispatch Job Form -->
+    <section id="panel-create" class="tab-panel">
+      <div class="card">
+        <div class="card-title-row">
+          <h2 class="card-title">Dispatch New Generation Job</h2>
         </div>
 
-        <footer class="footer">Powered by Cloudflare Workers + D1 | Free tier | Built with Hermes</footer>
+        <form id="job-form">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label for="submit-workflow-select">Workflow Template</label>
+              <select id="submit-workflow-select">
+                <option value="">-- Default / Generic Workflow --</option>
+              </select>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="submit-prompt">Positive Prompt</label>
+              <textarea id="submit-prompt" placeholder="cinematic portrait, ultra detailed, 8k, photorealistic...">masterpiece, 8k photorealistic portrait, sharp focus, cinematic lighting</textarea>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="submit-negative">Negative Prompt</label>
+              <input type="text" id="submit-negative" value="ugly, deformed, noisy, blurry, low quality, distorted" placeholder="unwanted traits, blurry, bad anatomy...">
+            </div>
+
+            <div class="form-group">
+              <label for="submit-seed">Random Seed <a href="javascript:void(0)" onclick="randomizeSeed()" style="float: right; text-transform: none; color: var(--primary-light);">Randomize</a></label>
+              <input type="number" id="submit-seed" value="42">
+            </div>
+
+            <div class="form-group">
+              <label for="submit-steps">Sampling Steps</label>
+              <input type="number" id="submit-steps" value="25" min="1" max="150">
+            </div>
+
+            <div class="form-group">
+              <label for="submit-cfg">CFG Scale</label>
+              <input type="number" id="submit-cfg" value="7.0" step="0.5" min="1" max="30">
+            </div>
+
+            <div class="form-group">
+              <label for="submit-width">Width</label>
+              <input type="number" id="submit-width" value="1024" step="64">
+            </div>
+
+            <div class="form-group">
+              <label for="submit-height">Height</label>
+              <input type="number" id="submit-height" value="1024" step="64">
+            </div>
+
+            <div class="form-group">
+              <label for="submit-priority">Queue Priority (1-10)</label>
+              <input type="number" id="submit-priority" value="5" min="1" max="10">
+            </div>
+          </div>
+
+          <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+            <button type="submit" id="btn-submit-job" class="btn btn-primary">Dispatch Generation Job</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- PANEL 3: Workflow Catalog -->
+    <section id="panel-workflows" class="tab-panel">
+      <div class="card">
+        <div class="card-title-row">
+          <h2 class="card-title">Registered Workflow Catalog</h2>
+          <button class="btn btn-secondary btn-sm" onclick="fetchWorkflows()">Refresh</button>
+        </div>
+        <div id="workflows-container" class="workflows-grid">
+          <p style="color: var(--text-dim); text-align: center; grid-column: 1/-1; padding: 2rem;">Loading workflows...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANEL 4: GPU Fleet -->
+    <section id="panel-fleet" class="tab-panel">
+      <div class="card">
+        <div class="card-title-row">
+          <h2 class="card-title">GPU Worker Node Fleet</h2>
+          <button class="btn btn-secondary btn-sm" onclick="fetchNodes()">Refresh Fleet</button>
+        </div>
+        <div id="nodes-container" class="nodes-grid">
+          <p style="color: var(--text-dim); text-align: center; grid-column: 1/-1; padding: 2rem;">Loading worker nodes...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANEL 5: API Documentation -->
+    <section id="panel-docs" class="tab-panel">
+      <div class="card">
+        <h2 class="card-title" style="margin-bottom: 1rem;">API Quickstart & SDK Reference</h2>
+        
+        <h3 style="font-size: 0.95rem; margin: 1rem 0 0.5rem; color: var(--primary-light);">1. Submit Job via cURL</h3>
+        <pre class="code-block">curl -X POST https://api.comfyui.hardonian.com/api/v1/jobs \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "workflow_id": "wf_flux_portrait",
+    "params": {
+      "prompt": "futuristic cybernetic cyberpunk portrait, glowing neon, 8k",
+      "steps": 28,
+      "seed": 1337
+    },
+    "priority": 8
+  }'</pre>
+
+        <h3 style="font-size: 0.95rem; margin: 1.5rem 0 0.5rem; color: var(--primary-light);">2. Python SDK Client</h3>
+        <pre class="code-block">from client.comfyui_api_client import ComfyUIClient
+
+client = ComfyUIClient(api_url="https://api.comfyui.hardonian.com", api_key="YOUR_API_KEY")
+
+# Submit and wait for output artifacts
+result = client.generate(
+    workflow="flux-portrait-studio",
+    params={"prompt": "Studio portrait of a character in rain", "seed": 42},
+    priority=8,
+    on_progress=lambda p: print(f"Progress: {p['progress']}%")
+)
+print("Generated artifacts:", result["outputs"])</pre>
+
+        <h3 style="font-size: 0.95rem; margin: 1.5rem 0 0.5rem; color: var(--primary-light);">3. Run Worker Daemon on GPU Node</h3>
+        <pre class="code-block"># On your EPYC GPU Server
+python -m bridge.comfy_worker_daemon \
+  --api-url https://api.comfyui.hardonian.com \
+  --comfy-url http://127.0.0.1:8188 \
+  --worker-key YOUR_WORKER_KEY</pre>
+      </div>
+    </section>
+
+    <!-- Job Details Modal -->
+    <div id="job-modal" class="modal-overlay" style="display: none;" onclick="if(event.target===this)closeJobModal()">
+      <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+          <div>
+            <h2 style="font-size: 1.25rem; font-family: var(--font-mono); color: #fff;" id="modal-job-id">job_12345</h2>
+            <div id="modal-job-status" style="margin-top: 0.25rem;"></div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="closeJobModal()">Close</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.85rem;">
+          <div><span style="color: var(--text-dim);">Workflow:</span> <span id="modal-job-workflow" style="font-weight: 600;">-</span></div>
+          <div><span style="color: var(--text-dim);">Assigned Node:</span> <span id="modal-job-node" style="font-weight: 600;">-</span></div>
+          <div><span style="color: var(--text-dim);">Created At:</span> <span id="modal-job-created">-</span></div>
+        </div>
+
+        <div id="modal-job-error-container" style="display: none; background: var(--danger-bg); border: 1px solid var(--danger); padding: 0.85rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; font-size: 0.85rem; color: #fca5a5;">
+          <strong>Error:</strong> <span id="modal-job-error"></span>
+        </div>
+
+        <h3 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-main);">Output Artifacts</h3>
+        <div id="modal-gallery" class="gallery-grid" style="margin-bottom: 1.5rem;"></div>
+
+        <h3 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-main);">Execution Logs</h3>
+        <pre id="modal-logs" class="code-block" style="max-height: 200px;">Loading logs...</pre>
+      </div>
     </div>
 
-    <script>
-        // Per-project config (injected at build or set by deploy script)
-        const SERVICE_NAME = 'API Dashboard';
-        const API_BASE = '/api/v1';
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+  </div>
 
-        document.getElementById('logo').textContent = SERVICE_NAME + ' Dashboard';
-
-        async function loadHealth() {
-            const el = document.getElementById('status');
-            try {
-                const res = await fetch('/health');
-                const data = await res.json();
-                el.innerHTML = '<span style="color:var(--green);">●</span> Online — ' + (data.service || SERVICE_NAME) + ' v' + (data.version || '0.1.0');
-            } catch (e) {
-                el.innerHTML = '<span style="color:var(--red);">●</span> Offline or unreachable';
-            }
-        }
-
-        async function loadStats() {
-            try {
-                const res = await fetch(API_BASE + '/stats');
-                if (res.ok) {
-                    const data = await res.json();
-                    document.getElementById('s-total').textContent = data.total || 0;
-                    document.getElementById('s-active').textContent = data.active || 0;
-                    document.getElementById('s-critical').textContent = data.issues || 0;
-                    document.getElementById('s-healthy').textContent = data.healthy || 0;
-                }
-            } catch (e) {
-                // Stats endpoint may not exist yet
-            }
-        }
-
-        loadHealth();
-        loadStats();
-    </script>
+  <script src="app.js"></script>
 </body>
 </html>
