@@ -1,5 +1,9 @@
 # ComfyUI API Gateway & GPU Queue Coordinator
 
+<!-- BEGIN: REPO HERO -->
+![comfyui-api — hero generated locally on the GPU stack](assets/repo-hero.png)
+<!-- END: REPO HERO -->
+
 [![CI Pipeline](https://github.com/Hardonian/comfyui-api/actions/workflows/ci.yml/badge.svg)](https://github.com/Hardonian/comfyui-api/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Runtime](https://img.shields.io/badge/Runtime-Cloudflare%20Workers%20%2B%20D1-orange)](https://workers.cloudflare.com/)
