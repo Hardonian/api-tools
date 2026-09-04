@@ -1,5 +1,9 @@
 # webhook-witness
 
+<!-- BEGIN: REPO HERO -->
+![webhook-witness — hero generated locally on the GPU stack](assets/repo-hero.png)
+<!-- END: REPO HERO -->
+
 Capture, inspect, and replay webhook payloads.  
 **Status:** Phase 2 (deployed on Cloudflare Workers + Pages, active development)
 
