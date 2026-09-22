@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ComfyUI API Gateway & Queue Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header>
+      <div class="brand-section">
+        <div class="brand-logo">C</div>
+        <div class="brand-title">
+          <h1>ComfyUI API <span class="badge">v1.0.0</span></h1>
+          <span class="brand-subtitle">Enterprise GPU Queue & Workflow Gateway</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="status-pill" id="status-indicator">
+          <span class="status-dot"></span> System Online
+        </div>
+        <div class="api-key-group">
+          <input type="password" id="input-api-key" placeholder="API Key / Bearer Token" class="api-key-input" aria-label="API Key or Bearer Token">
+          <button class="btn btn-secondary btn-sm" onclick="saveApiKey()">Save</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Top Stats Row -->
+    <section class="stats-grid">
+      <div class="stat-card queued">
+        <div class="stat-header">
+          <span class="stat-label">Queue Depth</span>
+        </div>
+        <div class="stat-val" id="stat-queued">-</div>
+        <div class="stat-sub">Pending GPU assignment</div>
+      </div>
+
+      <div class="stat-card active">
+        <div class="stat-header">
+          <span class="stat-label">Active Processing</span>
+        </div>
+        <div class="stat-val" id="stat-active">-</div>
+        <div class="stat-sub">Inference in progress</div>
+      </div>
+
+      <div class="stat-card completed">
+        <div class="stat-header">
+          <span class="stat-label">Completed Jobs</span>
+        </div>
+        <div class="stat-val" id="stat-completed">-</div>
+        <div class="stat-sub">Total finalized runs</div>
+      </div>
+
+      <div class="stat-card fleet">
+        <div class="stat-header">
+          <span class="stat-label">GPU Worker Fleet</span>
+        </div>
+        <div class="stat-val" id="stat-nodes">-</div>
+        <div class="stat-sub">Active worker nodes</div>
+      </div>
+    </section>
+
+    <!-- Tab Navigation -->
+    <nav class="tabs-nav">
+      <button class="tab-btn active" data-tab="jobs" onclick="switchTab('jobs')">Queue & Jobs</button>
+      <button class="tab-btn" data-tab="create" onclick="switchTab('create')">Dispatch Job</button>
+      <button class="tab-btn" data-tab="workflows" onclick="switchTab('workflows')">Workflow Catalog</button>
+      <button class="tab-btn" data-tab="fleet" onclick="switchTab('fleet')">GPU Fleet</button>
+      <button class="tab-btn" data-tab="docs" onclick="switchTab('docs')">API Quickstart</button>
+    </nav>
+
+    <!-- PANEL 1: Jobs Queue & Monitor -->
+    <main id="panel-jobs" class="tab-panel active">
+      <div class="card">
+        <div class="card-title-row">
+          <h2 class="card-title">Live Execution Queue</h2>
+          <div class="table-filter-group">
+            <select id="job-status-filter" class="filter-select" onchange="fetchJobs()" title="Filter by job status" aria-label="Filter by job status">
+              <option value="">All Statuses</option>
+              <option value="queued">Queued</option>
+              <option value="processing">Processing</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" onclick="fetchJobs()">Refresh</button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Job ID</th>
+                <th>Workflow</th>
+                <th>Status</th>
+                <th>Progress</th>
+                <th>Worker Node</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="jobs-table-body">
+              <tr><td colspan="7" class="table-placeholder">Loading queue...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- PANEL 2: Dispatch Job Form -->
+    <section id="panel-create" class="tab-panel">
+      <div class="card">
+        <div class="card-title-row">
+          <h2 class="card-title">Dispatch New Generation Job</h2>
+        </div>
+
+        <form id="job-form">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label for="submit-workflow-select">Workflow Template</label>
+              <select id="submit-workflow-select" title="Select workflow template" aria-label="Select workflow template">
+                <option value="">-- Default / Generic Workflow --</option>
+              </select>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="submit-prompt">Positive Prompt</label>
+              <textarea id="submit-prompt" placeholder="cinematic portrait, ultra detailed, 8k, photorealistic...">masterpiece, 8k photorealistic portrait, sharp focus, cinematic lighting</textarea>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="submit-negative">Negative Prompt</label>
+              <input type="text" id="submit-negative" value="ugly, deformed, noisy, blurry, low quality, distorted" placeholder="unwanted traits, blurry, bad anatomy...">
+            </div>
+
+            <div class="form-group">
+              <label for="submit-seed">Random Seed <a href="javascript:void(0)" onclick="randomizeSeed()" class="label-link">Randomize</a></label>
+              <input type="number" id="submit-seed" value="42">
+            </div>
+
+            <div class="form-group">
+              <label for="submit-steps">Sampling Steps</label>
+              <input type="number" id="submit-steps" value="25" min="1" max="150">
+            </div>
+
+            <div class="form-group">
+              <label for="submit-cfg">CFG Scale</label>
+              <input type="number" id="submit-cfg" value="7.0" step="0.5" min="1" max="30">
+            </div>
+
+            <div class="form-group">
+              <label for="submit-width">Width</label>
+              <input type="number" id="submit-width" value="1024" step="64">
+            </div>
+
+            <div class="form-group">
+              <label for="submit-height">Height</label>
+              <input type="number" id="submit-height" value="1024" step="64">
+            </div>
+
+            <div class="form-group">
+              <label for="submit-priority">Queue Priority (1-10)</label>
+              <input type="number" id="submit-priority" value="5" min="1" max="10">
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="btn-submit-job" class="btn btn-primary">Dispatch Generation Job</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- PANEL 3: Workflow Catalog -->
+    <section id="panel-workflows" class="tab-panel">
+      <div class="card">
+        <div class="card-title-row">
+          <h2 class="card-title">Registered Workflow Catalog</h2>
+          <button class="btn btn-secondary btn-sm" onclick="fetchWorkflows()">Refresh</button>
+        </div>
+        <div id="workflows-container" class="workflows-grid">
+          <p class="empty-state-text">Loading workflows...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANEL 4: GPU Fleet -->
+    <section id="panel-fleet" class="tab-panel">
+      <div class="card">
+        <div class="card-title-row">
+          <h2 class="card-title">GPU Worker Node Fleet</h2>
+          <button class="btn btn-secondary btn-sm" onclick="fetchNodes()">Refresh Fleet</button>
+        </div>
+        <div id="nodes-container" class="nodes-grid">
+          <p class="empty-state-text">Loading worker nodes...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANEL 5: API Documentation -->
+    <section id="panel-docs" class="tab-panel">
+      <div class="card">
+        <h2 class="card-title">API Quickstart & SDK Reference</h2>
+        
+        <h3 class="doc-heading">1. Submit Job via cURL</h3>
+        <pre class="code-block">curl -X POST https://api.comfyui.hardonian.com/api/v1/jobs \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "workflow_id": "wf_flux_portrait",
+    "params": {
+      "prompt": "futuristic cybernetic cyberpunk portrait, glowing neon, 8k",
+      "steps": 28,
+      "seed": 1337
+    },
+    "priority": 8
+  }'</pre>
+
+        <h3 class="doc-heading">2. Python SDK Client</h3>
+        <pre class="code-block">from client.comfyui_api_client import ComfyUIClient
+
+client = ComfyUIClient(api_url="https://api.comfyui.hardonian.com", api_key="YOUR_API_KEY")
+
+# Submit and wait for output artifacts
+result = client.generate(
+    workflow="flux-portrait-studio",
+    params={"prompt": "Studio portrait of a character in rain", "seed": 42},
+    priority=8,
+    on_progress=lambda p: print(f"Progress: {p['progress']}%")
+)
+print("Generated artifacts:", result["outputs"])</pre>
+
+        <h3 class="doc-heading">3. Run Worker Daemon on GPU Node</h3>
+        <pre class="code-block"># On your EPYC GPU Server
+python -m bridge.comfy_worker_daemon \
+  --api-url https://api.comfyui.hardonian.com \
+  --comfy-url http://127.0.0.1:8188 \
+  --worker-key YOUR_WORKER_KEY</pre>
+      </div>
+    </section>
+
+    <!-- Job Details Modal -->
+    <div id="job-modal" class="modal-overlay" onclick="if(event.target===this)closeJobModal()">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-job-title" id="modal-job-id">job_12345</h2>
+            <div id="modal-job-status" class="modal-status-badge"></div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="closeJobModal()">Close</button>
+        </div>
+
+        <div class="modal-meta-grid">
+          <div><span class="modal-meta-label">Workflow:</span> <span id="modal-job-workflow" class="modal-meta-val">-</span></div>
+          <div><span class="modal-meta-label">Assigned Node:</span> <span id="modal-job-node" class="modal-meta-val">-</span></div>
+          <div><span class="modal-meta-label">Created At:</span> <span id="modal-job-created">-</span></div>
+        </div>
+
+        <div id="modal-job-error-container" class="modal-error-box">
+          <strong>Error:</strong> <span id="modal-job-error"></span>
+        </div>
+
+        <h3 class="modal-section-title">Output Artifacts</h3>
+        <div id="modal-gallery" class="gallery-grid"></div>
+
+        <h3 class="modal-section-title">Execution Logs</h3>
+        <pre id="modal-logs" class="code-block modal-logs-view">Loading logs...</pre>
+      </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
