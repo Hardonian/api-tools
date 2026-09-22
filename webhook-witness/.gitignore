@@ -1,0 +1,24 @@
+node_modules/
+.deploy/
+.wrangler/
+*.log
+
+# --- Hardonian bootstrap kit ---
+# Hardonian standard ignores
+.env
+.env.*
+!.env.example
+!.env.template
+__pycache__/
+*.pyc
+.venv/
+venv/
+dist/
+build/
+target/
+.DS_Store
+.idea/
+.vscode/
+.coverage
+htmlcov/
+.pytest_cache/

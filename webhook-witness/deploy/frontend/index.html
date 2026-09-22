@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Webhook Witness Dashboard</title>
+  <style>
+    :root { --bg:#0b1020; --card:#141b34; --text:#eef2ff; --dim:#93a0c3; --accent:#6d5efc; --green:#23c483; --border:#263055; --warn:#f7b955; }
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{max-width:1180px;margin:0 auto;padding:32px 20px}.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+    .btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer}.btn.alt{background:#1b2342;border:1px solid var(--border)} .btn.warn{background:var(--warn);color:#201606}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:24px 0}.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px}
+    .split{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.split2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .stat{font-size:32px;font-weight:800}.label{color:var(--dim);font-size:12px;text-transform:uppercase;letter-spacing:.08em}.muted{color:var(--dim)}
+    table{width:100%;border-collapse:collapse}.table-card{overflow:auto} th,td{padding:12px;border-bottom:1px solid var(--border);text-align:left;font-size:14px}.pill{display:inline-block;background:rgba(35,196,131,.12);color:var(--green);padding:4px 8px;border-radius:999px;font-size:12px}
+    pre{white-space:pre-wrap;background:#09101f;border:1px solid var(--border);padding:16px;border-radius:14px;overflow:auto;color:#b8c2e7} a{color:#b3bbff}
+    input,select,textarea{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:#0e1630;color:var(--text);margin-top:8px}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.hidden{display:none}.notice{background:#0d1630;border:1px dashed var(--border);padding:12px;border-radius:12px;margin-top:12px}
+    @media (max-width: 880px){.split,.split2,.row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1 style="margin:0">Webhook Witness</h1>
+        <div class="muted">Workspace-scoped capture inboxes, replay plans, and lead-ready billing shell.</div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <a class="btn alt" href="https://webhook-witness-landing.pages.dev">Sales Page</a>
+        <button class="btn alt" id="logout">Forget Workspace</button>
+      </div>
+    </div>
+
+    <div class="split" style="margin-top:24px">
+      <div class="card">
+        <h2 style="margin-top:0">Open workspace</h2>
+        <div class="row">
+          <label>Workspace slug<input id="login-slug" placeholder="acme-inc" /></label>
+          <label>Workspace token<input id="login-token" placeholder="paste your workspace token" /></label>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px">
+          <button class="btn" id="login-btn">Open Workspace</button>
+          <button class="btn alt" id="load-demo">Load Demo Workspace</button>
+        </div>
+        <div class="notice">For the live product, the workspace token is your lightweight auth layer. We can swap this for real OAuth or magic-link auth in the next phase.</div>
+      </div>
+      <div class="card">
+        <h2 style="margin-top:0">Create workspace</h2>
+        <div class="row">
+          <label>Your name<input id="signup-name" placeholder="Scott" /></label>
+          <label>Email<input id="signup-email" placeholder="you@example.com" /></label>
+        </div>
+        <div class="row">
+          <label>Company<input id="signup-company" placeholder="Acme SaaS" /></label>
+          <label>Plan<select id="signup-plan"><option value="starter">Starter - $29</option><option value="team">Team - $99</option><option value="agency">Agency - $299</option></select></label>
+        </div>
+        <label>Use case<textarea id="signup-usecase" rows="3" placeholder="Stripe + GitHub webhook debugging for production incidents"></textarea></label>
+        <button class="btn" id="signup-btn" style="margin-top:12px">Create Workspace</button>
+        <div class="notice" id="signup-result">Creates a live workspace, stores a lead, and returns your capture URL plus dashboard URL.</div>
+      </div>
+    </div>
+
+    <div id="workspace-shell" class="hidden">
+      <div class="grid">
+        <div class="card"><div class="label">Workspace</div><div class="stat" style="font-size:24px" id="workspace-name">-</div><div class="muted" id="workspace-plan">-</div></div>
+        <div class="card"><div class="label">Total Events</div><div class="stat" id="total-events">-</div></div>
+        <div class="card"><div class="label">Sources</div><div class="stat" id="total-sources">-</div></div>
+        <div class="card"><div class="label">Latest Source</div><div class="stat" style="font-size:20px" id="latest-source">-</div></div>
+      </div>
+
+      <div class="split2">
+        <div class="card">
+          <h2 style="margin-top:0">Capture URL</h2>
+          <pre id="capture-url">-</pre>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px">
+            <button class="btn" id="seed">Seed Workspace Event</button>
+            <button class="btn alt" id="refresh">Refresh</button>
+            <button class="btn warn" id="copy-url">Copy Capture URL</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2 style="margin-top:0">Billing shell</h2>
+          <pre id="billing-state">-</pre>
+        </div>
+      </div>
+
+      <div class="card table-card">
+        <h2>Workspace Events</h2>
+        <table>
+          <thead><tr><th>ID</th><th>Source</th><th>Method</th><th>Received</th><th>Preview</th></tr></thead>
+          <tbody id="events-body"><tr><td colspan="5">Loading...</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="split2">
+        <div class="card">
+          <h2>Latest Event Details</h2>
+          <pre id="event-detail">Select an event.</pre>
+        </div>
+        <div class="card">
+          <h2>Replay Command</h2>
+          <pre id="replay-plan">Replay plan will appear here.</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const API_ORIGIN = 'https://webhook-witness.scottrmhardie.workers.dev';
+    const API_BASE = `${API_ORIGIN}/api/v1`;
+    const storageKey = 'webhook-witness-workspace';
+    const params = new URLSearchParams(window.location.search);
+
+    let session = {
+      workspace: params.get('workspace') || '',
+      token: params.get('token') || '',
+      plan: '',
+      captureUrl: ''
+    };
+
+    if (!session.workspace || !session.token) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
+        session = { ...session, ...saved };
+      } catch {}
+    }
+
+    function persistSession() {
+      localStorage.setItem(storageKey, JSON.stringify(session));
+    }
+
+    async function api(path, options = {}) {
+      const headers = { ...(options.headers || {}) };
+      if (session.token) headers['X-API-Key'] = session.token;
+      const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      return data;
+    }
+
+    function setLoggedOut() {
+      document.getElementById('workspace-shell').classList.add('hidden');
+      document.getElementById('workspace-name').textContent = '-';
+    }
+
+    function setLoggedIn() {
+      document.getElementById('workspace-shell').classList.remove('hidden');
+    }
+
+    async function openWorkspace(slug, token) {
+      session.workspace = slug.trim();
+      session.token = token.trim();
+      const auth = await api('/auth/workspace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: session.workspace, token: session.token })
+      });
+      session.plan = auth.workspace.plan;
+      session.captureUrl = auth.workspace.capture_url;
+      persistSession();
+      document.getElementById('login-slug').value = session.workspace;
+      document.getElementById('login-token').value = session.token;
+      await refreshAll();
+    }
+
+    async function createWorkspace() {
+      const payload = {
+        name: document.getElementById('signup-name').value,
+        email: document.getElementById('signup-email').value,
+        company: document.getElementById('signup-company').value,
+        plan: document.getElementById('signup-plan').value,
+        use_case: document.getElementById('signup-usecase').value
+      };
+      const res = await api('/workspaces/bootstrap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const workspace = res.workspace;
+      session.workspace = workspace.slug;
+      session.token = workspace.access_token;
+      session.plan = workspace.plan;
+      session.captureUrl = workspace.capture_url;
+      persistSession();
+      document.getElementById('signup-result').textContent = `Workspace ${workspace.slug} created. Token saved locally. Capture URL ready.`;
+      await refreshAll();
+    }
+
+    async function loadSummary() {
+      const data = await api(`/workspaces/${session.workspace}/summary?token=${encodeURIComponent(session.token)}`);
+      document.getElementById('workspace-name').textContent = `${data.workspace.name} (${data.workspace.slug})`;
+      document.getElementById('workspace-plan').textContent = `${data.workspace.plan} plan · ${data.workspace.owner_email}`;
+      document.getElementById('total-events').textContent = data.total_events ?? 0;
+      document.getElementById('total-sources').textContent = data.total_sources ?? 0;
+      document.getElementById('latest-source').textContent = data.latest_source || '—';
+      document.getElementById('capture-url').textContent = data.workspace.capture_url;
+      document.getElementById('billing-state').textContent = JSON.stringify({
+        state: data.workspace.billing_state,
+        plan: data.workspace.plan,
+        next_step: 'Wire Stripe checkout + billing portal secrets to replace manual shell.'
+      }, null, 2);
+      setLoggedIn();
+    }
+
+    async function loadEventDetail(id) {
+      const [detail, replay] = await Promise.all([
+        api(`/workspaces/${session.workspace}/events/${id}?token=${encodeURIComponent(session.token)}`),
+        api(`/workspaces/${session.workspace}/replay-plan/${id}?token=${encodeURIComponent(session.token)}`)
+      ]);
+      document.getElementById('event-detail').textContent = JSON.stringify(detail, null, 2);
+      document.getElementById('replay-plan').textContent = replay.curl_command || JSON.stringify(replay, null, 2);
+    }
+
+    async function loadEvents() {
+      const data = await api(`/workspaces/${session.workspace}/events?token=${encodeURIComponent(session.token)}&limit=20`);
+      const body = document.getElementById('events-body');
+      if (!data.events || !data.events.length) {
+        body.innerHTML = '<tr><td colspan="5">No events yet. Click Seed Workspace Event.</td></tr>';
+        document.getElementById('event-detail').textContent = 'No events yet.';
+        document.getElementById('replay-plan').textContent = 'No replay plan yet.';
+        return;
+      }
+      body.innerHTML = data.events.map(event => `<tr data-id="${event.id}"><td>${event.id}</td><td><span class="pill">${event.source}</span></td><td>${event.method}</td><td>${new Date(event.received_at).toLocaleString()}</td><td>${event.body_preview || ''}</td></tr>`).join('');
+      for (const row of body.querySelectorAll('tr[data-id]')) {
+        row.style.cursor = 'pointer';
+        row.onclick = () => loadEventDetail(row.dataset.id);
+      }
+      await loadEventDetail(data.events[0].id);
+    }
+
+    async function seedWorkspace() {
+      await api(`/workspaces/${session.workspace}/demo-seed?token=${encodeURIComponent(session.token)}`, { method: 'POST' });
+      await refreshAll();
+    }
+
+    async function refreshAll() {
+      if (!session.workspace || !session.token) {
+        setLoggedOut();
+        return;
+      }
+      await Promise.all([loadSummary(), loadEvents()]);
+    }
+
+    async function copyCaptureUrl() {
+      const text = document.getElementById('capture-url').textContent;
+      await navigator.clipboard.writeText(text);
+      alert('Capture URL copied');
+    }
+
+    document.getElementById('login-btn').onclick = async () => {
+      try {
+        await openWorkspace(document.getElementById('login-slug').value, document.getElementById('login-token').value);
+      } catch (err) {
+        alert(err.message);
+      }
+    };
+
+    document.getElementById('load-demo').onclick = async () => {
+      try {
+        await openWorkspace('demo-workspace', 'demo-workspace-token');
+      } catch (err) {
+        alert(err.message);
+      }
+    };
+
+    document.getElementById('signup-btn').onclick = async () => {
+      try {
+        await createWorkspace();
+      } catch (err) {
+        document.getElementById('signup-result').textContent = err.message;
+      }
+    };
+
+    document.getElementById('seed').onclick = async () => { try { await seedWorkspace(); } catch (err) { alert(err.message); } };
+    document.getElementById('refresh').onclick = async () => { try { await refreshAll(); } catch (err) { alert(err.message); } };
+    document.getElementById('copy-url').onclick = async () => { try { await copyCaptureUrl(); } catch (err) { alert(err.message); } };
+    document.getElementById('logout').onclick = () => {
+      session = { workspace: '', token: '', plan: '', captureUrl: '' };
+      localStorage.removeItem(storageKey);
+      setLoggedOut();
+    };
+
+    if (session.workspace && session.token) {
+      document.getElementById('login-slug').value = session.workspace;
+      document.getElementById('login-token').value = session.token;
+      refreshAll().catch(err => {
+        console.error(err);
+        setLoggedOut();
+      });
+    } else {
+      setLoggedOut();
+    }
+  </script>
+</body>
+</html>

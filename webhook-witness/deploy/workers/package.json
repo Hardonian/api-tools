@@ -1,0 +1,16 @@
+{
+  "name": "webhook-witness-worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "check": "node --check src/worker.js"
+  },
+  "dependencies": {
+    "itty-router": "^5.0.22"
+  },
+  "devDependencies": {
+    "wrangler": "^4.131.0"
+  }
+}

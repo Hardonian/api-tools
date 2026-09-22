@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Webhook Witness — Workspace webhook inboxes for SaaS teams</title>
+  <style>
+    :root{--bg:#09111f;--card:#121d34;--text:#eef2ff;--dim:#9aa7cf;--accent:#6d5efc;--border:#253356;--green:#23c483}
+    *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:linear-gradient(180deg,#09111f,#0f1830);color:var(--text)}
+    .wrap{max-width:1140px;margin:0 auto;padding:32px 20px 80px}.hero{padding:52px 0 20px}.hero h1{font-size:56px;line-height:1.02;margin:0 0 16px}.hero p{max-width:760px;color:var(--dim);font-size:20px}
+    .buttons{display:flex;gap:14px;flex-wrap:wrap;margin:28px 0}.btn{display:inline-block;text-decoration:none;padding:14px 18px;border-radius:12px;font-weight:800;border:none;cursor:pointer}.btn.primary{background:var(--accent);color:#fff}.btn.secondary{border:1px solid var(--border);color:var(--text);background:transparent}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:28px 0}.card{background:rgba(18,29,52,.92);border:1px solid var(--border);border-radius:18px;padding:20px}
+    pre{background:#08101d;border:1px solid var(--border);border-radius:18px;padding:18px;color:#b9c5ea;overflow:auto}.price{font-size:42px;font-weight:900}.small{color:var(--dim)} ul{padding-left:18px;color:var(--dim)}
+    input,select,textarea{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:#0e1630;color:var(--text);margin-top:8px}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 760px){.row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="small">Cloudflare Workers + D1 SaaS</div>
+      <h1>Give every SaaS team its own webhook witness box.</h1>
+      <p>Phase 2 is live: workspace creation, token auth, scoped capture URLs, lead capture, and a billing shell you can sell from today while Stripe wiring lands next.</p>
+      <div class="buttons">
+        <a class="btn primary" href="https://webhook-witness-frontend.pages.dev">Open Live Dashboard</a>
+        <a class="btn secondary" href="https://hardonian.github.io/webhook-witness">GitHub Repo</a>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card"><h3>Scoped capture inboxes</h3><p class="small">Each workspace gets its own capture URL and token so client payloads stop mixing together.</p></div>
+      <div class="card"><h3>Replay in one click</h3><p class="small">Stored events generate replay commands instantly, cutting debug time for Stripe, Clerk, GitHub, and custom providers.</p></div>
+      <div class="card"><h3>Lead and billing shell</h3><p class="small">Buyer intent is captured now. Stripe checkout can drop in without changing the product story or frontend flow.</p></div>
+    </section>
+
+    <section class="card">
+      <h2>Create a live workspace</h2>
+      <div class="row">
+        <label>Your name<input id="lead-name" placeholder="Scott" /></label>
+        <label>Email<input id="lead-email" placeholder="you@example.com" /></label>
+      </div>
+      <div class="row">
+        <label>Company<input id="lead-company" placeholder="Acme SaaS" /></label>
+        <label>Plan<select id="lead-plan"><option value="starter">Starter - $29</option><option value="team">Team - $99</option><option value="agency">Agency - $299</option></select></label>
+      </div>
+      <label>Use case<textarea id="lead-usecase" rows="3" placeholder="We need a safe inbox for Stripe + GitHub production webhook debugging"></textarea></label>
+      <div class="buttons">
+        <button class="btn primary" id="create-workspace">Create workspace</button>
+      </div>
+      <pre id="workspace-result">Fill the form to get a real workspace slug, token, capture URL, and dashboard URL.</pre>
+    </section>
+
+    <section class="card">
+      <h2>What buyers pay for</h2>
+      <pre>$ curl -X POST 'https://webhook-witness.scottrmhardie.workers.dev/api/v1/capture/acme/stripe?token=workspace_token' \
+  -H 'content-type: application/json' \
+  --data '{"type":"invoice.payment_failed","customer":"cus_123"}'
+
+→ event captured into the right workspace
+→ visible in the dashboard
+→ replay curl generated
+→ buyer gets a shareable debug inbox instead of chaos</pre>
+    </section>
+
+    <section class="grid">
+      <div class="card"><div>Starter</div><div class="price">$29</div><div class="small">/month</div><ul><li>1 workspace</li><li>500 events/month</li><li>Replay plans</li><li>Email support</li></ul></div>
+      <div class="card"><div>Team</div><div class="price">$99</div><div class="small">/month</div><ul><li>5 workspaces</li><li>10k events/month</li><li>Shared debugging</li><li>Slack-ready workflow</li></ul></div>
+      <div class="card"><div>Agency</div><div class="price">$299</div><div class="small">/month</div><ul><li>25 workspaces</li><li>100k events/month</li><li>Client isolation</li><li>Priority onboarding</li></ul></div>
+    </section>
+  </div>
+  <script>
+    const API_BASE = 'https://webhook-witness.scottrmhardie.workers.dev/api/v1';
+    document.getElementById('create-workspace').onclick = async () => {
+      const payload = {
+        name: document.getElementById('lead-name').value,
+        email: document.getElementById('lead-email').value,
+        company: document.getElementById('lead-company').value,
+        plan: document.getElementById('lead-plan').value,
+        use_case: document.getElementById('lead-usecase').value
+      };
+      const resultEl = document.getElementById('workspace-result');
+      resultEl.textContent = 'Creating workspace...';
+      try {
+        const res = await fetch(`${API_BASE}/workspaces/bootstrap`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        resultEl.textContent = JSON.stringify(data.workspace, null, 2);
+      } catch (err) {
+        resultEl.textContent = err.message;
+      }
+    };
+  </script>
+</body>
+</html>

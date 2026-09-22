@@ -1,0 +1,60 @@
+name: Deploy Cloudflare Worker + Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+  id-token: write
+
+env:
+  NODE_VERSION: '22'
+  WRANGLER_VERSION: '4.105.0'
+
+jobs:
+  deploy-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Install dependencies
+        if: ${{ hashFiles('deploy/workers/package.json') != '' }}
+        working-directory: deploy/workers
+        run: npm ci
+      - name: Deploy Worker
+        working-directory: deploy/workers
+        run: wrangler deploy --minify
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Deploy Frontend
+        run: npx wrangler pages deploy deploy/frontend --project-name webhook-witness-frontend
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+
+  deploy-landing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Deploy Landing
+        run: npx wrangler pages deploy deploy/landing --project-name webhook-witness-landing
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}

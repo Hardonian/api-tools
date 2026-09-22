@@ -1,0 +1,12 @@
+name = "webhook-witness"
+main = "src/worker.js"
+compatibility_date = "2024-06-01"
+
+[vars]
+APP_NAME = "webhook-witness"
+APP_TAGLINE = "Capture, inspect, and replay webhook payloads in minutes"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "webhook_witness"
+database_id = "e110627b-4831-45b3-a722-86e772ba1457"
