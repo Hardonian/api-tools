@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Changelog Radar — Detect breaking API changes before your app breaks</title>
+  <meta name="description" content="Monitor vendor API changelogs, diff changes automatically, and alert your team before integrations break. Works with Stripe, Twilio, Shopify, and any API." />
+  <meta property="og:title" content="API Changelog Radar" />
+  <meta property="og:description" content="Detect breaking API changes before your app breaks." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #06090f;
+      --text: #e8ecf4;
+      --text-dim: #8892a8;
+      --accent: #7c6afc;
+      --accent-glow: rgba(124, 106, 252, 0.2);
+      --border: #1e293b;
+      --green: #22c55e;
+      --red: #ef4444;
+      --card: rgba(15, 23, 42, 0.7);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ── Hero ─────────────────────────────────────── */
+    .hero {
+      min-height: 85vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center;
+      padding: 60px 24px;
+      background:
+        radial-gradient(ellipse 70% 50% at 50% 30%, rgba(124,106,252,0.14) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 30% at 20% 80%, rgba(34,197,94,0.08) 0%, transparent 50%);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px; border-radius: 24px;
+      background: rgba(124,106,252,0.12); border: 1px solid rgba(124,106,252,0.3);
+      font-size: 13px; font-weight: 600; color: var(--accent);
+      margin-bottom: 28px;
+      animation: fadeIn 0.6s ease;
+    }
+    .hero h1 {
+      font-size: clamp(36px, 6vw, 72px); font-weight: 900;
+      line-height: 1.1; letter-spacing: -2px;
+      max-width: 800px;
+      background: linear-gradient(135deg, #fff 40%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: fadeIn 0.8s ease;
+    }
+    .hero p {
+      font-size: clamp(16px, 2vw, 20px); color: var(--text-dim);
+      max-width: 600px; margin: 20px auto 36px; line-height: 1.6;
+      animation: fadeIn 1s ease;
+    }
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; animation: fadeIn 1.2s ease; }
+
+    /* ── Buttons ──────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 28px; border-radius: 12px;
+      font-weight: 800; font-size: 15px; cursor: pointer;
+      text-decoration: none; border: none; transition: all 0.3s;
+      font-family: inherit;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #5b4cd9);
+      color: #fff; box-shadow: 0 4px 20px var(--accent-glow);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 35px var(--accent-glow); }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-ghost:hover { border-color: var(--accent); background: rgba(124,106,252,0.08); }
+    .btn-full { width: 100%; justify-content: center; }
+    .btn-pricing { width: 100%; margin-top: 16px; justify-content: center; font-size: 13px; }
+
+    /* ── Features ─────────────────────────────────── */
+    .features { max-width: 1100px; margin: 0 auto; padding: 80px 24px; }
+    .features h2 {
+      text-align: center; font-size: 36px; font-weight: 800;
+      letter-spacing: -1px; margin-bottom: 12px;
+    }
+    .features > p { text-align: center; color: var(--text-dim); margin-bottom: 48px; font-size: 17px; }
+    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    @media (max-width: 768px) { .features-grid { grid-template-columns: 1fr; } }
+
+    .feature-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px;
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      transition: all 0.3s;
+    }
+    .feature-card:hover { border-color: rgba(124,106,252,0.4); transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+    .feature-icon { font-size: 32px; margin-bottom: 14px; }
+    .feature-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
+
+    /* ── How It Works ─────────────────────────────── */
+    .how-it-works { max-width: 900px; margin: 0 auto; padding: 80px 24px; }
+    .how-it-works h2 { text-align: center; font-size: 36px; font-weight: 800; letter-spacing: -1px; margin-bottom: 48px; }
+    .step {
+      display: flex; gap: 24px; margin-bottom: 40px; align-items: flex-start;
+    }
+    .step-num {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #5b4cd9);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 20px; flex-shrink: 0;
+    }
+    .step h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .step p { color: var(--text-dim); line-height: 1.6; }
+
+    /* ── Pricing ──────────────────────────────────── */
+    .pricing { max-width: 1100px; margin: 0 auto; padding: 80px 24px; }
+    .pricing h2 { text-align: center; font-size: 36px; font-weight: 800; letter-spacing: -1px; margin-bottom: 12px; }
+    .pricing > p { text-align: center; color: var(--text-dim); margin-bottom: 48px; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 900px) { .pricing-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 500px) { .pricing-grid { grid-template-columns: 1fr; } }
+
+    .price-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px;
+      transition: all 0.3s; position: relative;
+    }
+    .price-card.popular { border-color: var(--accent); box-shadow: 0 0 30px var(--accent-glow); }
+    .price-card.popular::before {
+      content: 'POPULAR'; position: absolute; top: -10px; right: 20px;
+      background: var(--accent); color: #fff; font-size: 10px; font-weight: 800;
+      padding: 3px 10px; border-radius: 8px; letter-spacing: 0.5px;
+    }
+    .price-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .price-amount { font-size: 36px; font-weight: 900; letter-spacing: -1px; margin: 12px 0; }
+    .price-amount span { font-size: 14px; font-weight: 500; color: var(--text-dim); }
+    .price-feature { font-size: 13px; color: var(--text-dim); padding: 6px 0; border-bottom: 1px solid rgba(30,41,59,0.5); }
+    .price-feature:last-of-type { border-bottom: none; }
+
+    /* ── CTA / Lead Capture ───────────────────────── */
+    .cta {
+      max-width: 640px; margin: 0 auto; padding: 80px 24px; text-align: center;
+    }
+    .cta h2 { font-size: 32px; font-weight: 800; letter-spacing: -1px; margin-bottom: 12px; }
+    .cta p { color: var(--text-dim); margin-bottom: 28px; }
+    .cta-form {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px;
+    }
+    .cta-form input {
+      width: 100%; padding: 12px 16px; border-radius: 10px;
+      border: 1px solid var(--border); background: #0c1222;
+      color: var(--text); font-family: inherit; font-size: 14px;
+      outline: none; margin-top: 10px; transition: border-color 0.2s;
+    }
+    .cta-form input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .cta-form label { display: block; text-align: left; font-size: 13px; color: var(--text-dim); font-weight: 500; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
+    #lead-result { margin-top: 12px; font-size: 14px; min-height: 20px; }
+    .text-success { color: var(--green); }
+    .text-error { color: var(--red); }
+    .mt-4 { margin-top: 16px; }
+
+    /* ── Footer ───────────────────────────────────── */
+    footer {
+      text-align: center; padding: 40px 24px;
+      border-top: 1px solid var(--border);
+      font-size: 13px; color: var(--text-dim);
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Animations ───────────────────────────────── */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <!-- ── Hero ──────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-badge">⚡ Now in Beta — Start Free</div>
+    <h1>Detect breaking API changes before your app breaks</h1>
+    <p>Monitor vendor changelogs, diff changes automatically, and alert your team the moment something shifts. Works with Stripe, Twilio, Shopify, and any API.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="https://api-changelog-radar-frontend.pages.dev">Open Dashboard →</a>
+      <a class="btn btn-ghost" href="https://github.com/Hardonian/api-changelog-radar">View on GitHub</a>
+    </div>
+  </section>
+
+  <!-- ── Features ──────────────────────────────────────────── -->
+  <section class="features">
+    <h2>Everything you need to stay ahead</h2>
+    <p>Stop finding out about API changes from production incidents.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h3>Automatic Polling</h3>
+        <p>Monitor any URL — changelog pages, OpenAPI specs, webhook docs, RSS feeds. We fetch and track changes on your schedule.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Smart Diffing</h3>
+        <p>Line-by-line comparison with severity classification. Instantly see what was added, removed, or changed — and whether it's breaking.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔔</div>
+        <h3>Multi-Channel Alerts</h3>
+        <p>Get notified via Slack, webhooks, email, or in-app. HMAC-signed webhook payloads for secure integrations.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <h3>Breaking Change Detection</h3>
+        <p>Keyword analysis detects deprecations, removals, and breaking changes. Severity badges help you prioritize.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Edge-First Architecture</h3>
+        <p>Built on Cloudflare Workers — sub-50ms response times globally. D1 database for zero-cold-start data access.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔑</div>
+        <h3>API-First Design</h3>
+        <p>Full REST API with JWT auth and scoped API keys. Integrate changelog monitoring into your CI/CD pipeline.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── How It Works ──────────────────────────────────────── -->
+  <section class="how-it-works">
+    <h2>How it works</h2>
+    <div class="step"><div class="step-num">1</div><div><h3>Add a source</h3><p>Paste the URL of any changelog, API spec, or docs page you want to monitor. Set a polling interval.</p></div></div>
+    <div class="step"><div class="step-num">2</div><div><h3>We watch for changes</h3><p>Every 5 minutes (or your custom interval), we fetch the page and compare it against the previous version.</p></div></div>
+    <div class="step"><div class="step-num">3</div><div><h3>Get alerted instantly</h3><p>When a change is detected, you get a severity-classified alert via your preferred channel — before it breaks your integration.</p></div></div>
+  </section>
+
+  <!-- ── Pricing ───────────────────────────────────────────── -->
+  <section class="pricing" id="pricing">
+    <h2>Simple, transparent pricing</h2>
+    <p>Start free. Upgrade when you need more.</p>
+    <div class="pricing-grid" id="pricing-grid">
+      <!-- Populated by JS from API -->
+    </div>
+  </section>
+
+  <!-- ── Lead Capture CTA ──────────────────────────────────── -->
+  <section class="cta" id="get-started">
+    <h2>Start monitoring in 30 seconds</h2>
+    <p>Enter a URL you want to watch. We'll notify you when it changes.</p>
+    <div class="cta-form">
+      <div class="form-row">
+        <div><label for="lead-name">Name</label><input id="lead-name" placeholder="Your name" /></div>
+        <div><label for="lead-email">Email</label><input id="lead-email" type="email" placeholder="you@company.com" /></div>
+      </div>
+      <label for="lead-url">URL to Monitor</label>
+      <input id="lead-url" placeholder="https://stripe.com/docs/changelog" />
+      <button class="btn btn-primary btn-full mt-4" onclick="submitLead()">Get Started Free →</button>
+      <div id="lead-result"></div>
+    </div>
+  </section>
+
+  <!-- ── Footer ────────────────────────────────────────────── -->
+  <footer>
+    <p>© 2026 API Changelog Radar · <a href="https://github.com/Hardonian/api-changelog-radar">GitHub</a> · Built on Cloudflare Workers</p>
+  </footer>
+
+  <script>
+    const API = 'https://api-changelog-radar.scottrmhardie.workers.dev';
+
+    // Load pricing from API
+    async function loadPricing() {
+      try {
+        const res = await fetch(`${API}/api/v1/plans`);
+        const data = await res.json();
+        const grid = document.getElementById('pricing-grid');
+        if (!data.plans) return;
+
+        grid.innerHTML = data.plans.map((p, i) => `
+          <div class="price-card ${i === 1 ? 'popular' : ''}">
+            <h3>${esc(p.name)}</h3>
+            <div class="price-amount">${p.price_monthly === 0 ? 'Free' : `$${p.price_monthly_dollars}`}<span>${p.price_monthly > 0 ? '/mo' : ''}</span></div>
+            <div class="price-feature">✓ ${p.max_sources} sources</div>
+            <div class="price-feature">✓ ${p.retention_days}-day retention</div>
+            <div class="price-feature">✓ ${p.max_team_members} team member${p.max_team_members > 1 ? 's' : ''}</div>
+            <div class="price-feature">✓ ${p.rate_limit_rpm} req/min</div>
+            ${p.features?.webhook_alerts ? '<div class="price-feature">✓ Webhook alerts</div>' : ''}
+            ${p.features?.slack_alerts ? '<div class="price-feature">✓ Slack alerts</div>' : ''}
+            ${p.features?.api_access ? '<div class="price-feature">✓ API access</div>' : ''}
+            <a class="btn ${i === 1 ? 'btn-primary' : 'btn-ghost'} btn-pricing" href="https://api-changelog-radar-frontend.pages.dev">
+              ${p.price_monthly === 0 ? 'Start Free' : 'Get Started'}
+            </a>
+          </div>
+        `).join('');
+      } catch {
+        // Fallback static pricing
+        document.getElementById('pricing-grid').innerHTML = `
+          <div class="price-card"><h3>Free</h3><div class="price-amount">Free</div><div class="price-feature">✓ 2 sources</div><div class="price-feature">✓ 7-day retention</div></div>
+          <div class="price-card popular"><h3>Starter</h3><div class="price-amount">$39<span>/mo</span></div><div class="price-feature">✓ 5 sources</div><div class="price-feature">✓ 30-day retention</div></div>
+          <div class="price-card"><h3>Growth</h3><div class="price-amount">$149<span>/mo</span></div><div class="price-feature">✓ 25 sources</div><div class="price-feature">✓ 90-day retention</div></div>
+          <div class="price-card"><h3>Scale</h3><div class="price-amount">$499<span>/mo</span></div><div class="price-feature">✓ 200 sources</div><div class="price-feature">✓ 365-day retention</div></div>
+        `;
+      }
+    }
+
+    async function submitLead() {
+      const name = document.getElementById('lead-name').value;
+      const email = document.getElementById('lead-email').value;
+      const source_url = document.getElementById('lead-url').value;
+      const resultEl = document.getElementById('lead-result');
+
+      if (!email) { resultEl.innerHTML = '<span class="text-error">Please enter your email.</span>'; return; }
+
+      try {
+        const res = await fetch(`${API}/api/v1/leads`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, source_url }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          resultEl.innerHTML = '<span class="text-success">✓ ' + esc(data.message || 'Thanks! We\'ll be in touch.') + '</span>';
+        } else {
+          resultEl.innerHTML = '<span class="text-error">' + esc(data.error || 'Something went wrong') + '</span>';
+        }
+      } catch {
+        resultEl.innerHTML = '<span class="text-error">Network error. Please try again.</span>';
+      }
+    }
+
+    function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+    loadPricing();
+  </script>
+</body>
+</html>

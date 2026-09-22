@@ -1,0 +1,46 @@
+name = "api-changelog-radar"
+main = "src/worker.js"
+compatibility_date = "2026-06-28"
+compatibility_flags = ["nodejs_compat"]
+
+# ── D1 Database ─────────────────────────────────────────────────────────
+[[d1_databases]]
+binding = "DB"
+database_name = "api_changelog_radar"
+database_id = "cd6cde11-6427-45dd-916e-6f14fdab2633"
+migrations_dir = "../d1/migrations"
+
+# ── Cron Triggers ───────────────────────────────────────────────────────
+[triggers]
+crons = [
+  "*/5 * * * *",   # Poll sources every 5 minutes
+  "* * * * *",     # Process notifications every minute
+]
+
+# ── Environment Variables ───────────────────────────────────────────────
+[vars]
+APP_NAME = "API Changelog Radar"
+APP_ENV = "production"
+
+# ── Secrets (set via `wrangler secret put`) ─────────────────────────────
+# JWT_SECRET          — signing key for JWT tokens
+# WEBHOOK_SIGNING_KEY — HMAC key for outbound webhook signatures
+# EMAIL_API_KEY       — Resend/SendGrid API key (optional)
+# EMAIL_FROM          — sender email address (optional)
+
+# ── Staging Environment ─────────────────────────────────────────────────
+[env.staging]
+name = "api-changelog-radar-staging"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "api_changelog_radar_staging"
+database_id = "cd6cde11-6427-45dd-916e-6f14fdab2633"
+
+[env.staging.vars]
+APP_NAME = "API Changelog Radar (Staging)"
+APP_ENV = "staging"
+CORS_ORIGINS = "http://localhost:8788,http://localhost:3000"
+
+[env.staging.triggers]
+crons = ["*/15 * * * *"]   # Less frequent in staging

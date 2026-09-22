@@ -1,0 +1,24 @@
+{
+  "name": "api-changelog-radar-workers",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "deploy:staging": "wrangler deploy --minify --env staging",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/ tests/",
+    "check": "node --check src/worker.js",
+    "db:migrate": "wrangler d1 migrations apply api_changelog_radar",
+    "db:migrate:local": "wrangler d1 migrations apply api_changelog_radar --local",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^4.105.0",
+    "vitest": "^5.0.0",
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "eslint": "^9.25.0"
+  }
+}

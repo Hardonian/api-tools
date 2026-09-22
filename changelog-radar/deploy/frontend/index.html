@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Changelog Radar — Dashboard</title>
+  <meta name="description" content="Monitor vendor API changelogs, detect breaking changes, and alert your team before integrations break." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #06090f;
+      --bg-card: rgba(15, 23, 42, 0.85);
+      --bg-input: #0c1222;
+      --text: #e8ecf4;
+      --text-dim: #8892a8;
+      --accent: #7c6afc;
+      --accent-glow: rgba(124, 106, 252, 0.25);
+      --border: #1e293b;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --radius: 14px;
+      --radius-sm: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,106,252,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 80% 100%, rgba(34,197,94,0.06) 0%, transparent 50%);
+    }
+
+    /* ── Nav ─────────────────────────────────────── */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      background: rgba(6,9,15,0.7);
+      position: sticky; top: 0; z-index: 100;
+    }
+    nav .logo { font-weight: 800; font-size: 16px; letter-spacing: -0.5px; }
+    nav .logo span { color: var(--accent); }
+    nav .nav-actions { display: flex; gap: 10px; align-items: center; }
+    .nav-user { font-size: 13px; color: var(--text-dim); }
+
+    /* ── Layout ──────────────────────────────────── */
+    .app { max-width: 1200px; margin: 0 auto; padding: 24px 20px 80px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    @media (max-width: 768px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    /* ── Cards ────────────────────────────────────── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .card:hover { border-color: rgba(124,106,252,0.3); box-shadow: 0 0 30px var(--accent-glow); }
+    .card h3 { font-size: 14px; color: var(--text-dim); font-weight: 600; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ── Forms ────────────────────────────────────── */
+    input, select, textarea {
+      width: 100%; padding: 11px 14px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--bg-input);
+      color: var(--text); font-family: inherit; font-size: 14px;
+      outline: none; transition: border-color 0.2s;
+    }
+    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    label { display: block; font-size: 13px; color: var(--text-dim); margin: 10px 0 4px; font-weight: 500; }
+
+    /* ── Buttons ──────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 11px 20px; border-radius: var(--radius-sm);
+      font-weight: 700; font-size: 14px; cursor: pointer;
+      border: none; transition: all 0.2s; font-family: inherit;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #5b4cd9);
+      color: #fff; box-shadow: 0 4px 15px var(--accent-glow);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 25px var(--accent-glow); }
+    .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-secondary:hover { border-color: var(--accent); }
+    .btn-danger { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+    .btn-sm { padding: 7px 14px; font-size: 12px; }
+
+    /* ── Status badges ───────────────────────────── */
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
+    .badge-yellow { background: rgba(234,179,8,0.15); color: var(--yellow); }
+    .badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+    .badge-dim { background: rgba(136,146,168,0.15); color: var(--text-dim); }
+
+    /* ── Stat numbers ────────────────────────────── */
+    .stat-value { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
+    .stat-label { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+
+    /* ── Tables ───────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    td { padding: 12px; border-bottom: 1px solid rgba(30,41,59,0.5); font-size: 14px; }
+    tr:hover td { background: rgba(124,106,252,0.04); }
+
+    /* ── Tabs ─────────────────────────────────────── */
+    .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+    .tab {
+      padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer;
+      color: var(--text-dim); border-bottom: 2px solid transparent;
+      transition: all 0.2s; background: none; border-top: none; border-left: none; border-right: none;
+      font-family: inherit;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab:hover { color: var(--text); }
+
+    /* ── Sections ─────────────────────────────────── */
+    .section { margin-bottom: 28px; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .section-header h2 { font-size: 18px; font-weight: 700; }
+
+    /* ── Auth Views ───────────────────────────────── */
+    .auth-container {
+      max-width: 420px; margin: 80px auto; text-align: center;
+    }
+    .auth-container h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+    .auth-container p { color: var(--text-dim); margin-bottom: 24px; }
+    .auth-toggle { color: var(--accent); cursor: pointer; font-weight: 600; }
+    .auth-toggle:hover { text-decoration: underline; }
+    .auth-footer-text { font-size: 13px; color: var(--text-dim); }
+
+    /* ── Diff Feed ────────────────────────────────── */
+    .diff-item {
+      display: flex; gap: 14px; padding: 14px 0;
+      border-bottom: 1px solid rgba(30,41,59,0.5);
+      animation: fadeIn 0.3s ease;
+    }
+    .diff-severity { width: 4px; border-radius: 4px; flex-shrink: 0; }
+    .diff-severity.breaking { background: var(--red); }
+    .diff-severity.warning { background: var(--yellow); }
+    .diff-severity.info { background: var(--green); }
+    .diff-meta { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+    .diff-stats { font-family: 'SF Mono', 'Consolas', monospace; font-size: 12px; }
+    .diff-stats .added { color: var(--green); }
+    .diff-stats .removed { color: var(--red); }
+    .diff-content { flex: 1; }
+    .diff-title { font-weight: 600; }
+    .diff-summary { font-size: 13px; margin-top: 2px; }
+
+    /* ── Animations ───────────────────────────────── */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.4s ease; }
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+    /* ── Utilities ────────────────────────────────── */
+    .hidden { display: none !important; }
+    .mt-2 { margin-top: 8px; }
+    .mt-4 { margin-top: 16px; }
+    .mb-4 { margin-bottom: 16px; }
+    .w-full { width: 100%; }
+    .gap-2 { gap: 8px; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .text-right { text-align: right; }
+    .font-bold { font-weight: 600; }
+    .plan-title { font-size: 24px; font-weight: 800; }
+    .mono { font-family: 'SF Mono', 'Consolas', monospace; font-size: 13px; }
+    .cell-mono-ellipsis { font-family: 'SF Mono', 'Consolas', monospace; font-size: 12px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cell-mono-target { font-family: 'SF Mono', 'Consolas', monospace; font-size: 12px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .text-muted { font-size: 12px; color: var(--text-dim); }
+    .empty-state { text-align: center; padding: 40px; color: var(--text-dim); }
+    .error-msg { color: var(--red); font-size: 13px; margin-top: 8px; }
+    .success-msg { color: var(--green); font-size: 13px; margin-top: 8px; }
+
+    /* ── Scrollbar ────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <!-- ── Navigation ────────────────────────────── -->
+  <nav>
+    <div class="logo">⚡ Changelog<span>Radar</span></div>
+    <div class="nav-actions">
+      <span class="nav-user" id="nav-user"></span>
+      <button class="btn btn-secondary btn-sm hidden" id="nav-logout" onclick="logout()">Log Out</button>
+    </div>
+  </nav>
+
+  <div class="app">
+    <!-- ── Auth View ─────────────────────────────── -->
+    <div id="auth-view" class="auth-container">
+      <h1>⚡ ChangelogRadar</h1>
+      <p>Monitor vendor changelogs, detect changes, alert your team.</p>
+      <div class="card">
+        <h3 id="auth-title">Sign In</h3>
+        <div id="auth-name-group" class="hidden">
+          <label for="auth-name">Name</label>
+          <input id="auth-name" type="text" placeholder="Your name" />
+        </div>
+        <label for="auth-email">Email</label>
+        <input id="auth-email" type="email" placeholder="you@example.com" autocomplete="email" />
+        <label for="auth-password">Password</label>
+        <input id="auth-password" type="password" placeholder="Min 8 characters" autocomplete="current-password" />
+        <div id="auth-error" class="error-msg hidden"></div>
+        <button class="btn btn-primary mt-4 w-full" onclick="handleAuth()" id="auth-submit">Sign In</button>
+        <p class="mt-4 auth-footer-text">
+          <span id="auth-switch-text">Don't have an account?</span>
+          <span class="auth-toggle" onclick="toggleAuthMode()" id="auth-switch-link">Create one</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- ── Dashboard View ────────────────────────── -->
+    <div id="dashboard-view" class="hidden">
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('overview')">Overview</button>
+        <button class="tab" onclick="switchTab('sources')">Sources</button>
+        <button class="tab" onclick="switchTab('alerts')">Alerts</button>
+        <button class="tab" onclick="switchTab('api-keys')">API Keys</button>
+        <button class="tab" onclick="switchTab('settings')">Settings</button>
+      </div>
+
+      <!-- ── Overview Tab ──────────────────────────── -->
+      <div id="tab-overview">
+        <div class="grid-3 section">
+          <div class="card">
+            <h3>Active Sources</h3>
+            <div class="stat-value" id="stat-sources">—</div>
+            <div class="stat-label" id="stat-sources-label">loading...</div>
+          </div>
+          <div class="card">
+            <h3>Changes Detected</h3>
+            <div class="stat-value" id="stat-diffs">—</div>
+            <div class="stat-label">recent changes</div>
+          </div>
+          <div class="card">
+            <h3>System Status</h3>
+            <div id="health-status">
+              <span class="badge badge-dim pulse">checking...</span>
+            </div>
+            <div class="stat-label mt-2" id="health-detail"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header">
+            <h2>Recent Changes</h2>
+            <button class="btn btn-secondary btn-sm" onclick="loadRecentDiffs()">↻ Refresh</button>
+          </div>
+          <div class="card" id="diff-feed">
+            <div class="empty-state pulse">Loading feed...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Sources Tab ───────────────────────────── -->
+      <div id="tab-sources" class="hidden">
+        <div class="section">
+          <div class="section-header">
+            <h2>Monitored Sources</h2>
+            <button class="btn btn-primary btn-sm" onclick="showCreateSource()">+ Add Source</button>
+          </div>
+
+          <!-- Create Source Form -->
+          <div id="create-source-form" class="card mb-4 hidden">
+            <h3>Add New Source</h3>
+            <div class="grid-2">
+              <div>
+                <label for="src-name">Name</label>
+                <input id="src-name" placeholder="Stripe API changelog" />
+              </div>
+              <div>
+                <label for="src-kind">Type</label>
+                <select id="src-kind">
+                  <option value="changelog">Docs changelog</option>
+                  <option value="spec">OpenAPI/SDK spec</option>
+                  <option value="webhook">Webhook spec</option>
+                  <option value="rss">RSS feed</option>
+                  <option value="custom">Custom URL</option>
+                </select>
+              </div>
+            </div>
+            <label for="src-url">URL to Monitor</label>
+            <input id="src-url" placeholder="https://stripe.com/docs/changelog" />
+            <label for="src-selector">CSS Selector (optional)</label>
+            <input id="src-selector" placeholder="#changelog-content" />
+            <div id="create-source-error" class="error-msg hidden"></div>
+            <div class="flex gap-2 mt-4">
+              <button class="btn btn-primary" onclick="createSource()">Create Source</button>
+              <button class="btn btn-secondary" onclick="hideCreateSource()">Cancel</button>
+            </div>
+          </div>
+
+          <div class="card" id="sources-list">
+            <div class="empty-state pulse">Loading sources...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Alerts Tab ────────────────────────────── -->
+      <div id="tab-alerts" class="hidden">
+        <div class="section">
+          <div class="section-header">
+            <h2>Alert Configurations</h2>
+            <button class="btn btn-primary btn-sm" onclick="showCreateAlert()">+ Add Alert</button>
+          </div>
+
+          <div id="create-alert-form" class="card mb-4 hidden">
+            <h3>New Alert</h3>
+            <div class="grid-2">
+              <div>
+                <label for="alert-channel">Channel</label>
+                <select id="alert-channel">
+                  <option value="webhook">Webhook</option>
+                  <option value="slack">Slack</option>
+                  <option value="email">Email</option>
+                  <option value="in_app">In-App</option>
+                </select>
+              </div>
+              <div>
+                <label for="alert-target">Target (URL or email)</label>
+                <input id="alert-target" placeholder="https://hooks.slack.com/..." />
+              </div>
+            </div>
+            <div id="create-alert-error" class="error-msg hidden"></div>
+            <div class="flex gap-2 mt-4">
+              <button class="btn btn-primary" onclick="createAlert()">Create Alert</button>
+              <button class="btn btn-secondary" onclick="hideCreateAlert()">Cancel</button>
+            </div>
+          </div>
+
+          <div class="card" id="alerts-list">
+            <div class="empty-state pulse">Loading alerts...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── API Keys Tab ──────────────────────────── -->
+      <div id="tab-api-keys" class="hidden">
+        <div class="section">
+          <div class="section-header">
+            <h2>API Keys</h2>
+            <button class="btn btn-primary btn-sm" onclick="createApiKeyAction()">+ Generate Key</button>
+          </div>
+          <div class="card" id="apikeys-list">
+            <div class="empty-state pulse">Loading keys...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Settings Tab ──────────────────────────── -->
+      <div id="tab-settings" class="hidden">
+        <div class="grid-2">
+          <div class="card">
+            <h3>Account</h3>
+            <div id="settings-account"></div>
+          </div>
+          <div class="card">
+            <h3>Current Plan</h3>
+            <div id="settings-plan"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Config ────────────────────────────────────────────────────────────
+    const API = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+      ? `${location.protocol}//${location.host}`
+      : 'https://api-changelog-radar.scottrmhardie.workers.dev';
+
+    let token = localStorage.getItem('acr_token');
+    let user = null;
+    let isRegister = false;
+
+    // ── API Client ────────────────────────────────────────────────────────
+    async function api(path, opts = {}) {
+      const headers = { 'Content-Type': 'application/json', ...opts.headers };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch(`${API}${path}`, { ...opts, headers });
+      const data = await res.json();
+      if (res.status === 401 && path !== '/api/v1/auth/login') { logout(); return null; }
+      return { ok: res.ok, status: res.status, data };
+    }
+
+    // ── Auth ──────────────────────────────────────────────────────────────
+    function toggleAuthMode() {
+      isRegister = !isRegister;
+      document.getElementById('auth-title').textContent = isRegister ? 'Create Account' : 'Sign In';
+      document.getElementById('auth-submit').textContent = isRegister ? 'Create Account' : 'Sign In';
+      document.getElementById('auth-name-group').classList.toggle('hidden', !isRegister);
+      document.getElementById('auth-switch-text').textContent = isRegister ? 'Already have an account?' : "Don't have an account?";
+      document.getElementById('auth-switch-link').textContent = isRegister ? 'Sign in' : 'Create one';
+      document.getElementById('auth-error').classList.add('hidden');
+    }
+
+    async function handleAuth() {
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      const name = document.getElementById('auth-name').value;
+      const errEl = document.getElementById('auth-error');
+
+      const endpoint = isRegister ? '/api/v1/auth/register' : '/api/v1/auth/login';
+      const body = isRegister ? { email, password, name } : { email, password };
+
+      const res = await api(endpoint, { method: 'POST', body: JSON.stringify(body) });
+      if (!res) return;
+
+      if (!res.ok) {
+        errEl.textContent = res.data.error || 'Something went wrong';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      token = res.data.token;
+      user = res.data.user;
+      localStorage.setItem('acr_token', token);
+      showDashboard();
+    }
+
+    function logout() {
+      token = null; user = null;
+      localStorage.removeItem('acr_token');
+      document.getElementById('auth-view').classList.remove('hidden');
+      document.getElementById('dashboard-view').classList.add('hidden');
+      document.getElementById('nav-logout').classList.add('hidden');
+      document.getElementById('nav-user').textContent = '';
+    }
+
+    // ── Dashboard Init ────────────────────────────────────────────────────
+    async function showDashboard() {
+      // Load user profile
+      const meRes = await api('/api/v1/auth/me');
+      if (!meRes || !meRes.ok) { logout(); return; }
+      user = meRes.data.user;
+
+      document.getElementById('auth-view').classList.add('hidden');
+      document.getElementById('dashboard-view').classList.remove('hidden');
+      document.getElementById('nav-user').textContent = user.display_name || user.email;
+      document.getElementById('nav-logout').classList.remove('hidden');
+
+      loadOverview();
+    }
+
+    async function loadOverview() {
+      // Health
+      try {
+        const h = await api('/health');
+        if (h && h.ok) {
+          document.getElementById('health-status').innerHTML = '<span class="badge badge-green">● Online</span>';
+          document.getElementById('health-detail').textContent = `v${h.data.version}`;
+        }
+      } catch { document.getElementById('health-status').innerHTML = '<span class="badge badge-red">● Offline</span>'; }
+
+      // Sources count
+      const srcRes = await api('/api/v1/sources?limit=1');
+      if (srcRes && srcRes.ok) {
+        const total = srcRes.data.pagination.total;
+        document.getElementById('stat-sources').textContent = total;
+        const meRes2 = await api('/api/v1/auth/me');
+        if (meRes2 && meRes2.ok) {
+          document.getElementById('stat-sources-label').textContent = `of ${meRes2.data.usage.max_sources} max (${meRes2.data.plan?.name || 'Free'} plan)`;
+        }
+      }
+
+      loadRecentDiffs();
+    }
+
+    async function loadRecentDiffs() {
+      const res = await api('/api/v1/diffs/recent?limit=15');
+      const container = document.getElementById('diff-feed');
+      if (!res || !res.ok || !res.data.diffs.length) {
+        container.innerHTML = '<div class="empty-state">No changes detected yet. Add a source to start monitoring!</div>';
+        document.getElementById('stat-diffs').textContent = '0';
+        return;
+      }
+
+      document.getElementById('stat-diffs').textContent = res.data.diffs.length;
+
+      container.innerHTML = res.data.diffs.map(d => `
+        <div class="diff-item fade-in">
+          <div class="diff-severity ${d.severity}"></div>
+          <div class="diff-content">
+            <div class="diff-title">${esc(d.source_name || 'Source #' + d.source_id)}</div>
+            <div class="diff-summary">${esc(d.summary_text || 'Change detected')}</div>
+            <div class="diff-meta">
+              <span class="diff-stats"><span class="added">+${d.added_lines}</span> <span class="removed">-${d.removed_lines}</span></span>
+              &nbsp;·&nbsp; ${timeAgo(d.detected_at)}
+            </div>
+          </div>
+          <span class="badge badge-${d.severity === 'breaking' ? 'red' : d.severity === 'warning' ? 'yellow' : 'green'}">${d.severity}</span>
+        </div>
+      `).join('');
+    }
+
+    // ── Sources ───────────────────────────────────────────────────────────
+    function showCreateSource() { document.getElementById('create-source-form').classList.remove('hidden'); }
+    function hideCreateSource() { document.getElementById('create-source-form').classList.add('hidden'); document.getElementById('create-source-error').classList.add('hidden'); }
+
+    async function createSource() {
+      const body = {
+        name: document.getElementById('src-name').value,
+        kind: document.getElementById('src-kind').value,
+        url: document.getElementById('src-url').value,
+        selector: document.getElementById('src-selector').value || undefined,
+      };
+      const res = await api('/api/v1/sources', { method: 'POST', body: JSON.stringify(body) });
+      if (!res) return;
+      if (!res.ok) {
+        const el = document.getElementById('create-source-error');
+        el.textContent = res.data.error; el.classList.remove('hidden');
+        return;
+      }
+      hideCreateSource();
+      loadSources();
+    }
+
+    async function loadSources() {
+      const res = await api('/api/v1/sources?limit=50');
+      const container = document.getElementById('sources-list');
+      if (!res || !res.ok || !res.data.sources.length) {
+        container.innerHTML = '<div class="empty-state">No sources yet. Click "+ Add Source" to start monitoring APIs.</div>';
+        return;
+      }
+      container.innerHTML = `<table>
+        <thead><tr><th>Name</th><th>URL</th><th>Type</th><th>Status</th><th>Last Polled</th><th>Actions</th></tr></thead>
+        <tbody>${res.data.sources.map(s => `
+          <tr>
+            <td class="font-bold">${esc(s.name)}</td>
+            <td class="cell-mono-ellipsis">${esc(s.url)}</td>
+            <td><span class="badge badge-dim">${s.kind}</span></td>
+            <td><span class="badge badge-${s.status === 'active' ? 'green' : s.status === 'error' ? 'red' : 'yellow'}">${s.status}</span></td>
+            <td class="text-muted">${s.last_polled_at ? timeAgo(s.last_polled_at) : 'never'}</td>
+            <td>
+              <button class="btn btn-secondary btn-sm" onclick="pollSource(${s.id})">Poll Now</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteSource(${s.id})">Delete</button>
+            </td>
+          </tr>`).join('')}
+        </tbody></table>`;
+    }
+
+    async function pollSource(id) {
+      const res = await api(`/api/v1/sources/${id}/poll`, { method: 'POST' });
+      if (res && res.ok) { alert('Poll triggered! ' + JSON.stringify(res.data.poll_result)); loadSources(); }
+      else if (res) alert(res.data.error || 'Poll failed');
+    }
+
+    async function deleteSource(id) {
+      if (!confirm('Delete this source and all its history?')) return;
+      await api(`/api/v1/sources/${id}`, { method: 'DELETE' });
+      loadSources();
+    }
+
+    // ── Alerts ────────────────────────────────────────────────────────────
+    function showCreateAlert() { document.getElementById('create-alert-form').classList.remove('hidden'); }
+    function hideCreateAlert() { document.getElementById('create-alert-form').classList.add('hidden'); }
+
+    async function createAlert() {
+      const body = {
+        channel: document.getElementById('alert-channel').value,
+        target: document.getElementById('alert-target').value,
+      };
+      const res = await api('/api/v1/alerts', { method: 'POST', body: JSON.stringify(body) });
+      if (!res) return;
+      if (!res.ok) {
+        const el = document.getElementById('create-alert-error');
+        el.textContent = res.data.error; el.classList.remove('hidden');
+        return;
+      }
+      hideCreateAlert();
+      loadAlerts();
+    }
+
+    async function loadAlerts() {
+      const res = await api('/api/v1/alerts');
+      const container = document.getElementById('alerts-list');
+      if (!res || !res.ok || !res.data.alerts.length) {
+        container.innerHTML = '<div class="empty-state">No alerts configured. Add one to get notified when APIs change.</div>';
+        return;
+      }
+      container.innerHTML = `<table>
+        <thead><tr><th>Channel</th><th>Target</th><th>Source</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>${res.data.alerts.map(a => `
+          <tr>
+            <td><span class="badge badge-dim">${a.channel}</span></td>
+            <td class="cell-mono-target">${esc(a.target)}</td>
+            <td>${a.source_name ? esc(a.source_name) : '<span class="text-muted">All sources</span>'}</td>
+            <td><span class="badge badge-${a.enabled ? 'green' : 'yellow'}">${a.enabled ? 'active' : 'paused'}</span></td>
+            <td>
+              <button class="btn btn-secondary btn-sm" onclick="testAlertAction(${a.id})">Test</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteAlert(${a.id})">Delete</button>
+            </td>
+          </tr>`).join('')}
+        </tbody></table>`;
+    }
+
+    async function testAlertAction(id) {
+      const res = await api(`/api/v1/alerts/${id}/test`, { method: 'POST' });
+      if (res && res.ok) alert('Test alert sent! ' + (res.data.test_result?.success ? 'Success' : 'Failed: ' + (res.data.test_result?.error || '')));
+    }
+
+    async function deleteAlert(id) {
+      if (!confirm('Delete this alert?')) return;
+      await api(`/api/v1/alerts/${id}`, { method: 'DELETE' });
+      loadAlerts();
+    }
+
+    // ── API Keys ──────────────────────────────────────────────────────────
+    async function createApiKeyAction() {
+      const name = prompt('Key name:', 'Default');
+      if (!name) return;
+      const res = await api('/api/v1/api-keys', { method: 'POST', body: JSON.stringify({ name, scopes: 'read,write' }) });
+      if (!res) return;
+      if (!res.ok) { alert(res.data.error); return; }
+      alert(`🔑 Your API Key (copy now — shown only once):\n\n${res.data.key}`);
+      loadApiKeys();
+    }
+
+    async function loadApiKeys() {
+      const res = await api('/api/v1/api-keys');
+      const container = document.getElementById('apikeys-list');
+      if (!res || !res.ok || !res.data.api_keys.length) {
+        container.innerHTML = '<div class="empty-state">No API keys yet. Generate one for programmatic access.</div>';
+        return;
+      }
+      container.innerHTML = `<table>
+        <thead><tr><th>Name</th><th>Prefix</th><th>Scopes</th><th>Last Used</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>${res.data.api_keys.map(k => `
+          <tr>
+            <td class="font-bold">${esc(k.name)}</td>
+            <td class="mono">${esc(k.prefix)}••••••••</td>
+            <td><span class="badge badge-dim">${k.scopes}</span></td>
+            <td class="text-muted">${k.last_used_at ? timeAgo(k.last_used_at) : 'never'}</td>
+            <td><span class="badge badge-${k.revoked_at ? 'red' : 'green'}">${k.revoked_at ? 'revoked' : 'active'}</span></td>
+            <td>${!k.revoked_at ? `<button class="btn btn-danger btn-sm" onclick="revokeKey(${k.id})">Revoke</button>` : ''}</td>
+          </tr>`).join('')}
+        </tbody></table>`;
+    }
+
+    async function revokeKey(id) {
+      if (!confirm('Revoke this API key? This cannot be undone.')) return;
+      await api(`/api/v1/api-keys/${id}`, { method: 'DELETE' });
+      loadApiKeys();
+    }
+
+    // ── Settings ──────────────────────────────────────────────────────────
+    async function loadSettings() {
+      const meRes = await api('/api/v1/auth/me');
+      if (!meRes || !meRes.ok) return;
+      const { user: u, usage, plan } = meRes.data;
+      document.getElementById('settings-account').innerHTML = `
+        <p><strong>Email:</strong> ${esc(u.email)}</p>
+        <p><strong>Name:</strong> ${esc(u.display_name || '—')}</p>
+        <p><strong>Member since:</strong> ${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</p>
+      `;
+      document.getElementById('settings-plan').innerHTML = `
+        <p class="plan-title">${plan?.name || 'Free'}</p>
+        <p class="mt-2"><strong>Sources:</strong> ${usage.sources} / ${usage.max_sources}</p>
+        <p><strong>Retention:</strong> ${plan?.retention_days || 7} days</p>
+        <p><strong>Rate limit:</strong> ${plan?.rate_limit_rpm || 30} req/min</p>
+        <button class="btn btn-primary btn-sm mt-4" onclick="alert('Billing integration coming soon!')">Upgrade Plan</button>
+      `;
+    }
+
+    // ── Tab Switching ─────────────────────────────────────────────────────
+    function switchTab(name) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('[id^="tab-"]').forEach(t => t.classList.add('hidden'));
+      event.target.classList.add('active');
+      document.getElementById(`tab-${name}`).classList.remove('hidden');
+
+      if (name === 'sources') loadSources();
+      if (name === 'alerts') loadAlerts();
+      if (name === 'api-keys') loadApiKeys();
+      if (name === 'settings') loadSettings();
+      if (name === 'overview') loadOverview();
+    }
+
+    // ── Utilities ─────────────────────────────────────────────────────────
+    function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+    function timeAgo(dateStr) {
+      const diff = Date.now() - new Date(dateStr + (dateStr.endsWith('Z') ? '' : 'Z')).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return 'just now';
+      if (mins < 60) return `${mins}m ago`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `${hrs}h ago`;
+      const days = Math.floor(hrs / 24);
+      return `${days}d ago`;
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────
+    if (token) showDashboard();
+  </script>
+</body>
+</html>
