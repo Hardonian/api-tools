@@ -1,0 +1,23 @@
+{
+  "name": "api-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Unified API tooling: ComfyUI API wrapper, webhook verification, and API changelog tracking",
+  "workspaces": [
+    "comfyui-api",
+    "webhook-witness",
+    "changelog-radar"
+  ],
+  "scripts": {
+    "lint": "pnpm -r run lint",
+    "test": "pnpm -r run test"
+  },
+  "keywords": [
+    "api",
+    "comfyui",
+    "webhooks",
+    "changelog",
+    "cloudflare-workers"
+  ],
+  "license": "MIT"
+}
